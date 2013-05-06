@@ -4875,15 +4875,15 @@
                 IF(TempPath(LEN_TRIM(TempPath):LEN_TRIM(TempPath)).NE."/")THEN
                     TempPath = TRIM(TempPath)//"/"
                 ENDIF
-                OPEN(FILE=TRIM(TempPath)//"TESTER.txt",UNIT=99,ACTION="WRITE",IOSTAT=IOS)
-                IF(IOS.NE.0)THEN
-                    IF(MyRank.EQ.0)THEN
+                IF(MyRank.EQ.0)THEN
+                    OPEN(FILE=TRIM(TempPath)//"TESTER.txt",UNIT=99,ACTION="WRITE",IOSTAT=IOS)
+                    IF(IOS.NE.0)THEN
                         CALL SYSTEM("mkdir "//TRIM(TempPath))
                         WRITE(*,'(A)') "WARNING: Temporary folder doesn't exist.  FigureGen has created it."
+                    ELSE
+                        CLOSE(99,STATUS="DELETE")
                     ENDIF
-                ELSE
-                    CLOSE(99,STATUS="DELETE")
-                ENDIF
+                ENDIF    
                 READ(UNIT=11,FMT='(A50)') AlphaLabel
                 READ(UNIT=11,FMT='(A50)') TempC
                 IF(TempC(1:1).EQ."1")THEN
