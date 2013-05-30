@@ -1360,6 +1360,7 @@
             CHARACTER(LEN=40)   :: Fort14File
             CHARACTER(LEN=40)   :: Fort14File2
             CHARACTER(LEN=50)   :: GridFileFormat
+            CHARACTER(LEN=50)   :: GridFileFormat2
             CHARACTER(LEN=50)   :: GSPath
             CHARACTER(LEN=100)  :: InputFile
             CHARACTER(LEN=40)   :: LabelsColor
@@ -4083,6 +4084,9 @@
 
 
         SUBROUTINE MakeTranslationTable
+#ifdef NETCDF
+            USE netcdf
+#endif            
             USE KDTREE2_MODULE
             IMPLICIT NONE
             
@@ -4091,6 +4095,10 @@
             INTEGER               :: JunkI
             INTEGER               :: NE
             INTEGER               :: NN
+            INTEGER               :: NCID
+            INTEGER               :: NODEDIM
+            INTEGER               :: XVAR
+            INTEGER               :: YVAR
             REAL(8)               :: X
             REAL(8)               :: Y
             TYPE(KDTREE2),POINTER :: SearchTree
@@ -4098,15 +4106,32 @@
 
 
             !...Start reading the second mesh
-            OPEN(FILE=TRIM(Fort14File2),UNIT=141,ACTION="READ",STATUS="OLD")
-            READ(141,*) JunkC
-            READ(141,*) NE,NN
-            ALLOCATE(G2XY(1:2,1:NN))
-            NumNodesMesh2 = NN
-            DO I = 1,NN
-                READ(141,*) JunkI,G2XY(1,I),G2XY(2,I)
-            ENDDO
-            CLOSE(141)
+            IF(INDEX(Fort14File2,".nc").GT.0)THEN
+#ifndef NETCDF
+                WRITE(*,'(A)') "ERROR: Not compiled for NetCDF"
+                STOP
+#else            
+                CALL CHECK(NF90_OPEN(TRIM(Fort14File2),NF90_NOWRITE,NCID))
+                CALL CHECK(NF90_INQ_DIMID(NCID,"node",NODEDIM))
+                CALL CHECK(NF90_INQUIRE_DIMENSION(NCID,NODEDIM,LEN=NN))
+                ALLOCATE(G2XY(1:2,1:NN))
+                CALL CHECK(NF90_INQ_VARID(NCID,'x',XVAR))
+                CALL CHECK(NF90_INQ_VARID(NCID,'y',YVAR))
+                CALL CHECK(NF90_GET_VAR(NCID,XVAR,G2XY(1,:)))
+                CALL CHECK(NF90_GET_VAR(NCID,YVAR,G2XY(2,:)))
+                CALL CHECK(NF90_CLOSE(NCID))
+#endif
+            ELSE
+                OPEN(FILE=TRIM(Fort14File2),UNIT=141,ACTION="READ",STATUS="OLD")
+                READ(141,*) JunkC
+                READ(141,*) NE,NN
+                ALLOCATE(G2XY(1:2,1:NN))
+                NumNodesMesh2 = NN
+                DO I = 1,NN
+                    READ(141,*) JunkI,G2XY(1,I),G2XY(2,I)
+                ENDDO
+                CLOSE(141)
+            ENDIF    
 
             ALLOCATE(TranslationTable(1:NumNodesGlobal))
 
