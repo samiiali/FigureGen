@@ -1439,6 +1439,7 @@
             INTEGER             :: NumLayers
             INTEGER             :: NumNodesGlobal
             INTEGER             :: NumNodesLocal
+            INTEGER             :: NumNodesMesh2
             INTEGER             :: NumProcs
             INTEGER             :: NumProcsInitial
             INTEGER             :: NumRecords
@@ -1635,18 +1636,19 @@
                 STOP  
             END SUBROUTINE    
                     
-            SUBROUTINE ReadMyNETCDFVariable(NCID,RECORD,VARID1,VEC1,VARID2,VEC2)
+            SUBROUTINE ReadMyNETCDFVariable(NCID,NUMNODES,RECORD,VARID1,VEC1,VARID2,VEC2)
                 USE netcdf
                 IMPLICIT NONE
                 INTEGER,INTENT(IN)           :: NCID
                 INTEGER,INTENT(IN)           :: RECORD
                 INTEGER,INTENT(IN)           :: VARID1
                 INTEGER,INTENT(IN),OPTIONAL  :: VARID2
+                INTEGER,INTENT(IN)           :: NUMNODES
                 REAL,INTENT(OUT)             :: VEC1(:)
                 REAL,INTENT(OUT),OPTIONAL    :: VEC2(:)
-                CALL CHECK(NF90_GET_VAR(NCID,VARID1,VEC1,START=(/1,RECORD/),COUNT=(/NumNodesGlobal,1/)))
+                CALL CHECK(NF90_GET_VAR(NCID,VARID1,VEC1,START=(/1,RECORD/),COUNT=(/NUMNODES,1/)))
                 IF(PRESENT(VARID2).AND.PRESENT(VEC2))THEN
-                    CALL CHECK(NF90_GET_VAR(NCID,VARID2,VEC2,START=(/1,RECORD/),COUNT=(/NumNodesGlobal,1/)))
+                    CALL CHECK(NF90_GET_VAR(NCID,VARID2,VEC2,START=(/1,RECORD/),COUNT=(/NUMNODES,1/)))
                 ENDIF
                 RETURN
             END SUBROUTINE    
@@ -2596,9 +2598,9 @@
                                 IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     IF(ContourFileNumCols.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,RECORD=J,VARID1=NC_Var,VEC1=U1)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,VARID1=NC_Var,VEC1=U1)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,RECORD=J,VARID1=NC_VAR,VEC1=U1,VARID2=NC_VAR2,VEC2=V1)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,VARID1=NC_VAR,VEC1=U1,VARID2=NC_VAR2,VEC2=V1)
                                     ENDIF    
 #endif
                                 ENDIF
@@ -2861,50 +2863,7 @@
                             CALL Check(NF90_INQ_VARID(NC_ID1,'depth',NC_Var))
                             CALL Check(NF90_INQUIRE_VARIABLE(NC_ID1,NC_Var,dimids=NC_DimIDs))
                             CALL Check(NF90_INQUIRE_DIMENSION(NC_ID1,NC_DimIDs(1),len=NumNodes1))
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'zeta',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 1
-                                NC_File = 63
-                            ENDIF
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'u-vel',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 2
-                                NC_File = 64
-                            ENDIF
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'pressure',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 1
-                                NC_File = 73
-                            ENDIF
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'windx',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 2
-                                NC_File = 74
-                            ENDIF
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'swan_HS',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 1
-                                NC_File = 301
-                            ENDIF
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'swan_DIR',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 1
-                                NC_File = 302
-                            ENDIF
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'swan_TPS',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 1
-                                NC_File = 303
-                            ENDIF
-                            NC_Status = NF90_INQ_VARID(NC_ID1,'swan_TMM10',NC_Var)
-                            IF(NC_Status.EQ.NF90_NOERR)THEN
-                                ContourFileNumCols = 1
-                                NC_File = 307
-                            ENDIF
-                            IF(NC_FILE.EQ.-1)THEN
-                                WRITE(*,'(A)') "No NetCDF attribute found."
-                                STOP
-                            ENDIF
+                            CALL FindMyNetCDFVariable(NC_ID1)
 #endif
                         ENDIF
                         IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
@@ -2924,8 +2883,9 @@
 #endif
                         ENDIF
 
-                        IF(NumNodes1.NE.NumNodes2)THEN
-                            WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: The contour files should have the same number of nodes."
+                        IF(NumNodes1.NE.NumNodes2.AND..NOT.NeedTranslationTable)THEN
+                            WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: The contour files should have the same number of nodes"
+                            WRITE(UNIT=*,FMT='(A)') "             unless two mesh geometries are specified in the input file."  
 #ifdef CMPI
                             CALL MPI_FINALIZE(IERR)
 #endif
@@ -2935,11 +2895,11 @@
                         NumNodesGlobal = NumNodes1
 
                         ALLOCATE(U1(1:NumNodesGlobal))
-                        ALLOCATE(U2(1:NumNodesGlobal))
+                        ALLOCATE(U2(1:NumNodesMesh2))
                         ALLOCATE(V1(1:NumNodesGlobal))
-                        ALLOCATE(V2(1:NumNodesGlobal))
+                        ALLOCATE(V2(1:NumNodesMesh2))
                         ALLOCATE(Vels1(1:NumNodesGlobal))
-                        ALLOCATE(Vels2(1:NumNodesGlobal))
+                        ALLOCATE(Vels2(1:NumNodesMesh2))
 
                         loopminmax2: DO J=1,NumRecsLocal 
 
@@ -3011,9 +2971,9 @@
                                 IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     IF(ContourFileNumCOls.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,VARID1=NC_Var,VEC1=U1,Record=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,Record=J)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,VARID1=NC_Var,VEC1=U1,VARID2=NC_VAR2,VEC2=V1,Record=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,VARID2=NC_VAR2,VEC2=V1,Record=J)
                                     ENDIF    
 #endif
                                 ENDIF
@@ -3060,9 +3020,9 @@
 #ifdef NETCDF
                                     CALL GetNetCDFVARID(NC_ID2,NC_Var,NC_Var2,ContourFileNumCols)
                                     IF(ContourFileNumCOls.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var,VEC1=U2,RECORD=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var,VEC1=U2,RECORD=J)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var,VEC1=U2,VARID2=NC_VAR2,VEC2=V2,Record=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var,NUMNODES=NumNodesMesh2,VEC1=U2,VARID2=NC_VAR2,VEC2=V2,Record=J)
                                     ENDIF    
 #endif
                                 ENDIF
@@ -3372,7 +3332,7 @@
 
                         IF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
-                            CALL ReadMyNetCDFVariable(NCID=NC_ID,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=J)
+                            CALL ReadMyNetCDFVariable(NCID=NC_ID,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=J)
 #endif
                         ENDIF
 
@@ -4134,6 +4094,7 @@
             READ(141,*) JunkC
             READ(141,*) NE,NN
             ALLOCATE(G2XY(1:2,1:NN))
+            NumNodesMesh2 = NN
             DO I = 1,NN
                 READ(141,*) JunkI,G2XY(1,I),G2XY(2,I)
             ENDDO
@@ -8229,9 +8190,9 @@
 #ifdef NETCDF
                                 
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,VARID1=NC_Var,VEC1=U1,RECORD=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=Record)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
                                 ENDIF
 #endif
                             ENDIF
@@ -8807,9 +8768,9 @@
 #ifdef NETCDF
                                 
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,VARID1=NC_Var,VEC1=U1,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,Record=Record)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,Record=Record)
                                 ENDIF
 #endif
                             ENDIF
@@ -8817,9 +8778,9 @@
 #ifdef NETCDF
 
                                 IF(ContourFileNumCols2.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var3,VEC1=U2,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VEC1=U2,Record=Record)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var3,VARID2=NC_Var4,VEC1=U2,VEC2=V2,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VARID2=NC_Var4,VEC1=U2,VEC2=V2,Record=Record)
                                 ENDIF
 
 #endif
@@ -9597,7 +9558,7 @@
 
                     IF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
-                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
+                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
 #endif
                     ENDIF
 
@@ -10007,6 +9968,7 @@
                         CALL MakeTranslationTable
                     ELSE
                         ALLOCATE(TranslationTable(1:NumNodesGlobal))
+                        NumNodesMesh2 = NumNodesGlobal
                         DO I = 1,NumNodesGlobal
                             TranslationTable(I) = I
                         ENDDO
