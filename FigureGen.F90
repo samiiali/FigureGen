@@ -2556,6 +2556,7 @@
                             IF(J.LT.RecordsList(CounterLocal))THEN
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN 
+                                    NumNodes1 = NumNodesGlobal
                                     CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
                                         READ(UNIT=19,FMT=*) JunkI
@@ -2567,6 +2568,7 @@
                                 CounterLocal = CounterLocal + 1
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
+                                    NumNodes1 = NumNodesGlobal
                                     CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
@@ -2906,12 +2908,14 @@
                             IF(J.LT.RecordsList(CounterLocal))THEN
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
+                                    NumNodes1 = NumNodesGlobal
                                     CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
                                        READ(UNIT=19,FMT=*) JunkI
                                     ENDDO
                                 ENDIF
                                 IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
+                                    NumNodes2 = NumNodesMesh2
                                     CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,NumNodes2,DefaultValue)
                                     DO I=1,NumNodes2
                                        READ(UNIT=23,FMT=*) JunkI
@@ -2923,6 +2927,7 @@
                                 CounterLocal = CounterLocal + 1
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
+                                    NumNodes1 = NumNodesGlobal
                                     CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
@@ -2937,6 +2942,7 @@
 #endif
                                 ENDIF
                                 IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
+                                    NumNodes2 = NumNodesMesh2
                                     CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,NumNodes2,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
@@ -3289,7 +3295,8 @@
 
                     IF(J.LT.RecordsList(CounterLocal))THEN
 
-                        IF(TRIM(VectorFileFormat).EQ."ASCII")THEN 
+                        IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
+                            NumNodes1 = NumNodesGlobal
                             CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),JunkR,JunkR2,NumNodes1,DefaultValue)
                             DO I=1,NumNodes1
                                 READ(UNIT=20,FMT=*) JunkI
@@ -3301,6 +3308,7 @@
                         CounterLocal = CounterLocal + 1
 
                         IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
+                            NumNodes1 = NumNodesGlobal
                             CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),JunkR,JunkR2,NumNodes1,DefaultValue)
                         ELSEIF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
@@ -6275,13 +6283,13 @@
 
                 INTRINSIC                    :: TRIM
 
-                CHARACTER(LEN=50),INTENT(IN) :: FileName
+                CHARACTER(LEN=*),INTENT(IN)  :: FileName
                 CHARACTER(LEN=50)            :: FileNameDisplay 
                 CHARACTER(LEN=100)           :: Line
 
                 INTEGER,INTENT(IN)           :: FileNameLen
                 INTEGER                      :: I
-                INTEGER,INTENT(OUT)          :: NonDefaultNodes
+                INTEGER,INTENT(INOUT)        :: NonDefaultNodes
                 INTEGER,INTENT(IN)           :: UnitNumber
 
                 REAL,INTENT(OUT)             :: DefaultValue
@@ -6299,7 +6307,6 @@
                     READ(UNIT=Line,FMT=*,END=9917,ERR=9917) TimeReal, TimeReal2, NonDefaultNodes, DefaultValue
                     GOTO 9918
 9917                READ(UNIT=Line,FMT=*) TimeReal, TimeReal2
-                    NonDefaultNodes = NumNodesGlobal
                     DefaultValue = 0.0
 9918                EXIT outer
 
@@ -8132,6 +8139,7 @@
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                 IF(CurrentRecord.LT.Record)THEN
                                     DO J=CurrentRecord,Record-1
+                                        NumNodes1 = NumNodesGlobal
                                         CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),CurrentTime,JunkR, &
                                                            NumNodes1,DefaultValue)
                                         DO I=1,NumNodes1
@@ -8146,6 +8154,7 @@
                             ENDIF
 
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
+                                NumNodes1 = NumNodesGlobal
                                 CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),CurrentTime,JunkR, &
                                                    NumNodes1,DefaultValue)
                             ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
@@ -8669,6 +8678,7 @@
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                 IF(CurrentRecord.LT.Record)THEN
                                     DO J=CurrentRecord,Record-1
+                                        NumNodes1 = NumNodesGlobal
                                         CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),CurrentTime,JunkR, &
                                                            NumNodes1,DefaultValue)
                                         DO I=1,NumNodes1
@@ -8684,6 +8694,7 @@
                             IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
                                 IF(CurrentRecord.LT.Record)THEN
                                     DO J=CurrentRecord,Record-1
+                                        NumNodes2 = NumNodesMesh2
                                         CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),CurrentTime,JunkR, &
                                                            NumNodes2,DefaultValue)
                                         DO I=1,NumNodes2
@@ -8698,6 +8709,7 @@
                             ENDIF
 
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
+                                NumNodes1 = NumNodesGlobal
                                 CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),CurrentTime,JunkR, &
                                                    NumNodes1,DefaultValue)
                             ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
@@ -8713,11 +8725,12 @@
 #endif
                             ENDIF
                             IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
+                                NumNodes2 = NumNodesMesh2
                                 CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),CurrentTime,JunkR, &
                                                    NumNodes2,DefaultValue)
                             ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
-                                NumNodes2 = NumNodesGlobal
+                                NumNodes2 = NumNodesMesh2 
                                 CALL GetNetCDFVARID(NC_ID2,NC_Var3,NC_Var4,ContourFileNumCols2)
 #ifdef VARFILLVAL                                    
                                 CALL Check(NF90_GET_ATT(NC_ID2,NC_Var,'_FillValue',DefaultValue))
@@ -8882,9 +8895,9 @@
                                 IF(IfPlotBackgroundImages.NE.2)THEN
 #ifndef DRYDIFF                                
                                     IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).GT.-90000D0))THEN
-                                        Z(I) = BathLocal(XYZNodes(I)) - Vels2(TranslationTable(XYZNodes(I)))
+                                        Z(I) = BathLocal(I) - Vels2(TranslationTable(XYZNodes(I)))
                                     ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
-                                        Z(I) = BathLocal(XYZNodes(I)) - Vels1(TranslationTable(XYZNodes(I))) 
+                                        Z(I) = BathLocal(I) - Vels1(TranslationTable(XYZNodes(I))) 
                                     ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
                                         Z(I) = 0.0d0
                                     ELSE
@@ -9494,6 +9507,7 @@
                         IF(VectorFileIsContourFile.EQ.0)THEN
                             IF(CurrentRecord.LT.Record)THEN
                                 DO J=CurrentRecord,Record-1
+                                    NumNodes1 = NumNodesGlobal
                                     CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),CurrentTime,JunkR,NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
 #ifdef SLOWREAD
@@ -9509,6 +9523,7 @@
 
                     IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
                         IF(VectorFileIsContourFile.EQ.0)THEN
+                            NumNodes1 = NumNodesGlobal
                             CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),CurrentTime,JunkR,NumNodes1,DefaultValue)
                         ELSE
                             NumNodes1 = NumNodesGlobal
