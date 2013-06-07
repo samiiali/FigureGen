@@ -46,7 +46,7 @@ TestFileListNC=( maxele.63.nc fort.63.nc fort.74.nc )
 #...Cleaner function
 if [ $# -gt 0 ] ; then
     if [ $1 == "clean" ] ; then
-        rm -rf Output TEMP $FGSRC FigureGen_* globalvar.mod
+        rm -rf Output TEMP $FGSRC FigureGen_* *.mod
         exit 0
     fi
 fi    

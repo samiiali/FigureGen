@@ -1374,6 +1374,7 @@
             CHARACTER(LEN=50)   :: ParticleColor
             CHARACTER(LEN=50)   :: ParticleFile
             CHARACTER(LEN=50)   :: ParticleFileFormat
+            CHARACTER(LEN=50)   :: ParticlePalette
             CHARACTER(LEN=50)   :: ParticlePattern
             CHARACTER(LEN=50)   :: ParticleSize
             CHARACTER(LEN=50)   :: ParticleXYZFile
@@ -1461,6 +1462,7 @@
             INTEGER,ALLOCATABLE :: XYZNodes(:)
 
             LOGICAL             :: NeedTranslationTable
+            LOGICAL             :: UseParticlePalette
             LOGICAL,ALLOCATABLE :: BdyNodes(:)
 
             REAL,ALLOCATABLE    :: BathLocal(:)
@@ -5490,6 +5492,17 @@
                                 ParticlePattern = TempC(LEN_TRIM(ParticleSize)+2:I-1)
                                 ParticleColor   = TempC(I+1:LEN_TRIM(TempC))
                                 CALL LowercaseWord(ParticleColor)
+                                
+                                !...Cobell - Check for a palette file
+                                IF(INDEX(ParticleColor,"cpt").GT.0)THEN
+                                    UseParticlePalette = .TRUE.
+                                    ParticlePalette    = TempC(I+5:LEN_TRIM(TempC))
+                                ELSE
+                                    IF(INDEX(ParticleColor,",").GT.0)THEN
+                                        ParticleColor = ParticleColor(1:INDEX(ParticleColor,",")-1)
+                                    ENDIF
+                                ENDIF
+                                    
                                 EXIT pth2
                             ENDIF
                         ENDDO pth2
@@ -7118,7 +7131,8 @@
 
                 IF(((IfPlotFilledContours.GE.1).OR.((IfPlotContourLines.GE.1).AND.(INDEX(ColorLines,"CONTOUR").GT.0)).OR. &
                    ((IfPlotGrid.GT.0).AND.(INDEX(ColorLines,"GRID").GT.0)).OR. &
-                   (TRIM(ContourFileType).EQ."HWM-CSV")).AND.(INDEX(ColorLines,"GRID-DECOMP").LE.0).AND.(IL1.EQ.1))THEN
+                   (TRIM(ContourFileType).EQ."HWM-CSV")).AND.(INDEX(ColorLines,"GRID-DECOMP").LE.0).AND.(IL1.EQ.1).AND.   &
+                   UseParticlePalette.EQV..FALSE.)THEN
 
                     Line = ""
                     Line = TRIM(Line)//TRIM(Path)//"psscale"
@@ -7258,12 +7272,16 @@
                                            "/s"//TRIM(ADJUSTL(BorderIncrementMajorC))//       &
                                            "f"//TRIM(ADJUSTL(BorderIncrementMinorC))//"WeSn"
                     ENDIF
-                    IF(ParticlePattern(1:1).EQ."0")THEN
-                       Line = TRIM(Line)//" "//"-G"//TRIM(ParticleColor)
+                    IF(UseParticlePalette)THEN
+                        Line = TRIM(Line)//" -C"//TRIM(ParticlePalette)
                     ELSE
-                       Line = TRIM(Line)//" "//"-Gp100/"//TRIM(ParticlePattern)//":F"//TRIM(ParticleColor)//"B-"
-                    ENDIF
-                    IF(KeepOpen(7).EQ.1) THEN
+                        IF(ParticlePattern(1:1).EQ."0")THEN
+                            Line = TRIM(Line)//" "//"-G"//TRIM(ParticleColor)
+                        ELSE
+                            Line = TRIM(Line)//" "//"-Gp100/"//TRIM(ParticlePattern)//":F"//TRIM(ParticleColor)//"B-"
+                        ENDIF
+                    ENDIF    
+                    IF(KeepOpen(7).EQ.1.OR.UseParticlePalette) THEN
                         Line = TRIM(Line)//" "//"-K"
                     ENDIF
                     Line = TRIM(Line)//" "//"-Sc"//TRIM(ParticleSize)//"p"
@@ -7275,6 +7293,26 @@
                     ENDIF
                     Line = TRIM(Line)//" "//TRIM(PlotName)//".ps"
                     CALL SYSTEM(TRIM(Line))
+
+                    IF(UseParticlePalette)THEN
+                        Line = ""
+                        Line = TRIM(Line)//TRIM(Path)//"psscale"
+                        Line = TRIM(Line)//" "//"-D"//TRIM(ADJUSTL(SideBarXC))//"i/"//TRIM(ADJUSTL(ContourScaleYC))//"i/" &
+                                         //TRIM(ADJUSTL(ScaleHeightC))//"i/"//TRIM(ADJUSTL(ScaleWidthC))//"i"
+                        Line = TRIM(Line)//" "//"-C"//TRIM(ParticlePalette)
+                        Line = TRIM(Line)//" "//"-B"//TRIM(ADJUSTL(ScaleLabelEveryC))//"::/:"//TRIM(ContourUnits)//":"
+                        IF(KeepOpen(7).EQ.1)THEN
+                            Line = TRIM(Line)//" "//"-K"
+                        ENDIF
+                        IF(IfStarted.EQ.0)THEN
+                            Line = TRIM(Line)//" "//">"
+                            IfStarted = 1
+                        ELSE
+                            Line = TRIM(Line)//" "//"-O >>"
+                        ENDIF
+                        Line = TRIM(Line)//" "//TRIM(PlotName)//".ps"
+                        CALL SYSTEM(TRIM(Line))
+                    ENDIF
 
                     IF(Verbose.GE.3)THEN
                         IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0))THEN
@@ -9464,7 +9502,11 @@
                         CALL Check(NF90_CLOSE(NC_ID1))
                         DO I=1,NumParticles
                             IF(MOD(I,IfPlotParticles).EQ.0)THEN
-                                WRITE(41,FMT='(2(2X,F16.8))') ParticleLon(I),ParticleLat(I)
+                                IF(UseParticlePalette)THEN
+                                    WRITE(41,FMT='(3(2X,F16.8))') ParticleLon(I),ParticleLat(I),ParticleFlag(I)
+                                ELSE
+                                    WRITE(41,FMT='(2(2X,F16.8))') ParticleLon(I),ParticleLat(I)
+                                ENDIF
                             ENDIF
                         ENDDO
 #endif
