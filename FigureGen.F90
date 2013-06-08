@@ -6168,7 +6168,7 @@
                IF(((TRIM(ContourFileType).EQ."GRID-BATH").OR.      &
                    (INDEX(ContourFileType,"GRID-DECOMP").GT.0).OR. &
                    (TRIM(ContourFileType).EQ."GRID-SIZE")).AND.    &
-                   (IfPlotVectors.EQ.0))THEN
+                   (IfPlotVectors.EQ.0).AND.(IfPlotParticles.EQ.0))THEN
                    IF(MyRank.EQ.0)THEN
                        WRITE(*,'(A)') "WARNING: Record information ignored at end of input file; "// &
                                       "one record will be generated from grid file."
@@ -6213,16 +6213,16 @@
                             RecordsList(I) = 1
                         ENDDO
                     ENDIF
-                ELSE
-                    IF(NumRecords.GT.0)THEN
-                        ALLOCATE(RecordsList(1:NumRecords))
-                        DO I=1,NumRecords
-                            READ(UNIT=11,FMT=*) RecordsList(I)
-                        ENDDO
-                    ELSEIF(NumRecords.LT.0)THEN
-                        RecordsInc = ABS(NumRecords)
-                        READ(UNIT=11,FMT=*) RecordsBegin
-                        READ(UNIT=11,FMT=*) RecordsEnd
+                ENDIF
+                IF(NumRecords.GT.0.AND..NOT.ALLOCATED(RecordsList))THEN
+                    ALLOCATE(RecordsList(1:NumRecords))
+                    DO I=1,NumRecords
+                        READ(UNIT=11,FMT=*) RecordsList(I)
+                    ENDDO
+                ELSEIF(NumRecords.LT.0.AND..NOT.ALLOCATED(RecordsList))THEN
+                    RecordsInc = ABS(NumRecords)
+                    READ(UNIT=11,FMT=*) RecordsBegin
+                    READ(UNIT=11,FMT=*) RecordsEnd
                         
                         !...Added - Zach
                         ! Don't know if this functionality is available by another means, but I just added this for my own
@@ -6231,24 +6231,23 @@
                         ! RecordsBegin = -10
                         ! RecordsEnd = 0
                         
-                        IF((RecordsBegin.LT.0).OR.(RecordsEnd.LE.0))THEN
-                            NumRecs63 = Count63(TRIM(ContourFile1),TRIM(ContourFileFormat1))
-                        ENDIF
-                        
-                        IF(RecordsBegin.LE.0)THEN
-                            RecordsBegin = NumRecs63 + RecordsBegin
-                        ENDIF
-                        
-                        IF(RecordsEnd.LE.0)THEN
-                            RecordsEnd = NumRecs63 + RecordsEnd
-                        ENDIF  
-                        
-                        NumRecords = (RecordsEnd - RecordsBegin + 1)/RecordsInc
-                        ALLOCATE(RecordsList(1:NumRecords))
-                        DO I=1,NumRecords
-                            RecordsList(I) = RecordsBegin + (I-1)*RecordsInc
-                        ENDDO
+                    IF((RecordsBegin.LT.0).OR.(RecordsEnd.LE.0))THEN
+                        NumRecs63 = Count63(TRIM(ContourFile1),TRIM(ContourFileFormat1))
                     ENDIF
+                       
+                    IF(RecordsBegin.LE.0)THEN
+                        RecordsBegin = NumRecs63 + RecordsBegin
+                    ENDIF
+                        
+                    IF(RecordsEnd.LE.0)THEN
+                        RecordsEnd = NumRecs63 + RecordsEnd
+                    ENDIF  
+                       
+                    NumRecords = (RecordsEnd - RecordsBegin + 1)/RecordsInc
+                    ALLOCATE(RecordsList(1:NumRecords))
+                    DO I=1,NumRecords
+                        RecordsList(I) = RecordsBegin + (I-1)*RecordsInc
+                    ENDDO
                 ENDIF
 
                 CLOSE(UNIT=11,STATUS="KEEP")
