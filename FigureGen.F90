@@ -6179,7 +6179,6 @@
                        RecordsList(I) = 1
                    ENDDO
                ELSEIF(INDEX(ContourFileType,"13-").GT.0)THEN
-        !        IF(INDEX(ContourFileType,"13-").GT.0)THEN
                     IF(INDEX(ContourFileType,"13-WIND-REDUCTION").GT.0)THEN
                         IF(TRIM(ContourFileType).EQ."13-WIND-REDUCTION")THEN
                             IF(MyRank.EQ.0)THEN
@@ -10125,7 +10124,8 @@
 #endif
                         ENDIF
                     ENDIF
-                    IF((IfPlotFilledContours.EQ.0).AND.(IfPlotContourLines.EQ.0).AND. &
+                    IF((IfPlotFilledContours.EQ.0.OR.TRIM(ContourFileType).NE."ADCIRC-OUTPUT") &
+                           .AND.(IfPlotContourLines.EQ.0).AND. &
                            (IfPlotVectors.EQ.0).AND.(IfPlotParticles.NE.0))THEN
                         IF(TRIM(ParticleFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
