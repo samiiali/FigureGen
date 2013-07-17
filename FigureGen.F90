@@ -4944,14 +4944,16 @@
 
                 ENDIF
 
-                INQUIRE(FILE=TRIM(Fort14File2),EXIST=FileExists)
-                IF(.NOT.FileExists)THEN
-                    IF(MyRank.EQ.0)THEN
-                        WRITE(*,'(A)') "FATAL ERROR: Second Grid file does not exist. FigureGen is quitting."
-                    ENDIF
+                IF(NeedTranslationTable)THEN
+                    INQUIRE(FILE=TRIM(Fort14File2),EXIST=FileExists)
+                    IF(.NOT.FileExists)THEN
+                        IF(MyRank.EQ.0)THEN
+                            WRITE(*,'(A)') "FATAL ERROR: Second Grid file does not exist. FigureGen is quitting."
+                        ENDIF
 
-                    ERROR = .TRUE.
-                    RETURN
+                        ERROR = .TRUE.
+                        RETURN
+                    ENDIF    
                 ENDIF    
 
 
@@ -8952,13 +8954,12 @@
 
                             DO I=1,NumNodesLocal
 
-        !                       Z(I) = Vels1(XYZNodes(I)) - Vels2(XYZNodes(I))
                                 IF(IfPlotBackgroundImages.NE.2)THEN
-#ifndef DRYDIFF                                
+#ifdef DEPTHDIFF                                
                                     IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).GT.-90000D0))THEN
                                         Z(I) = BathLocal(I) - Vels2(TranslationTable(XYZNodes(I)))
                                     ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
-                                        Z(I) = BathLocal(I) - Vels1(TranslationTable(XYZNodes(I))) 
+                                        Z(I) = BathLocal(I) - Vels1(XYZNodes(I)) 
                                     ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
                                         Z(I) = 0.0d0
                                     ELSE
@@ -10017,6 +10018,7 @@
                        ENDDO
                        JunkR=0
                    ENDDO
+#endif                   
                    IF(InputFileError)THEN
 #ifdef CMPI
                         CALL MPI_FINALIZE(IERR)
@@ -10024,15 +10026,14 @@
                         STOP
                    ENDIF     
                 ELSE
+#ifdef CMPI                
                    CALL MPI_RECV(JunkI,1,MPI_INTEGER,0,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE,IERR)
                    CALL ReadInputFile(InputFileError)
                    IF(InputFileError)THEN
-#ifdef CMPI
                         CALL MPI_FINALIZE(IERR)
-#endif
                         STOP
-                   ENDIF     
-#endif
+                   ENDIF
+#endif                   
                 ENDIF
 
                 IF(MyRank.EQ.0)THEN
