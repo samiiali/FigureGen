@@ -2968,14 +2968,12 @@
                                     DefaultValue = DefaultValue * ContourConversionFactor
                                 ENDIF
 
-                                DO I=1,NumNodesGlobal
-                                    U1(I) = DefaultValue
-                                    U2(I) = DefaultValue
-                                    V1(I) = DefaultValue
-                                    V2(I) = DefaultValue
-                                    Vels1(I) = DefaultValue
-                                    Vels2(I) = DefaultValue
-                                ENDDO
+                                U1(:) = DefaultValue
+                                U2(:) = DefaultValue
+                                V1(:) = DefaultValue
+                                V2(:) = DefaultValue
+                                Vels1(:) = DefaultValue
+                                Vels2(:) = DefaultValue
 
                                 IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
@@ -8805,39 +8803,33 @@
                             ENDIF
 
                             IF(.NOT.ALLOCATED(U1))    ALLOCATE(U1(1:NumNodesGlobal))
-                            IF(.NOT.ALLOCATED(U2))    ALLOCATE(U2(1:NumNodesGlobal))
+                            IF(.NOT.ALLOCATED(U2))    ALLOCATE(U2(1:NumNodesMesh2))
                             IF(.NOT.ALLOCATED(V1))    ALLOCATE(V1(1:NumNodesGlobal))
-                            IF(.NOT.ALLOCATED(V2))    ALLOCATE(V2(1:NumNodesGlobal))
+                            IF(.NOT.ALLOCATED(V2))    ALLOCATE(V2(1:NumNodesMesh2))
                             IF(.NOT.ALLOCATED(Vels1)) ALLOCATE(Vels1(1:NumNodesGlobal))
-                            IF(.NOT.ALLOCATED(Vels2)) ALLOCATE(Vels2(1:NumNodesGlobal))
+                            IF(.NOT.ALLOCATED(Vels2)) ALLOCATE(Vels2(1:NumNodesMesh2))
 
                             IF(INDEX(TRIM(ContourFile1),"64").GT.0)THEN
-                                DO I=1,NumNodesGlobal
-                                    U1(I)    = -99999.0
-                                    U2(I)    = -99999.0
-                                    V1(I)    = -99999.0
-                                    V2(I)    = -99999.0
-                                    Vels1(I) = -99999.0
-                                    Vels2(I) = -99999.0
-                                ENDDO
+                                U1(:)    = -99999.0
+                                U2(:)    = -99999.0
+                                V1(:)    = -99999.0
+                                V2(:)    = -99999.0
+                                Vels1(:) = -99999.0
+                                Vels2(:) = -99999.0
                             ELSEIF(DefaultValue.GT.-99998.0)THEN
-                                DO I=1,NumNodesGlobal
-                                    U1(I)    = DefaultValue * ContourConversionFactor
-                                    U2(I)    = DefaultValue * ContourConversionFactor
-                                    V1(I)    = DefaultValue * ContourConversionFactor
-                                    V2(I)    = DefaultValue * ContourConversionFactor
-                                    Vels1(I) = DefaultValue * ContourConversionFactor
-                                    Vels2(I) = DefaultValue * ContourConversionFactor
-                                ENDDO
+                                U1(:)    = DefaultValue * ContourConversionFactor
+                                U2(:)    = DefaultValue * ContourConversionFactor
+                                V1(:)    = DefaultValue * ContourConversionFactor
+                                V2(:)    = DefaultValue * ContourConversionFactor
+                                Vels1(:) = DefaultValue * ContourConversionFactor
+                                Vels2(:) = DefaultValue * ContourConversionFactor
                             ELSE
-                                DO I=1,NumNodesGlobal
-                                    U1(I)    = DefaultValue
-                                    U2(I)    = DefaultValue
-                                    V1(I)    = DefaultValue
-                                    V2(I)    = DefaultValue
-                                    Vels1(I) = DefaultValue
-                                    Vels2(I) = DefaultValue
-                                ENDDO
+                                U1(:)    = DefaultValue
+                                U2(:)    = DefaultValue
+                                V1(:)    = DefaultValue
+                                V2(:)    = DefaultValue
+                                Vels1(:) = DefaultValue
+                                Vels2(:) = DefaultValue
                             ENDIF
 
                             IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
@@ -9618,23 +9610,19 @@
                             V1(I) = DefaultValue
                         ENDDO
                     ELSEIF(VectorFileIsContourFile.EQ.1)THEN
-                        DO I=1,NumNodesGlobal
-                            IF(U1(I).LT.-99998.0)THEN
-                               U1(I) = DefaultValue
-                            ENDIF
-                            IF(V1(I).LT.-99998.0)THEN
-                               V1(I) = DefaultValue
-                            ENDIF
-                        ENDDO
+                        WHERE(U1.LT.-99998.0)
+                            U1 = DefaultValue
+                        ENDWHERE
+                        WHERE(V1.LT.-99998.0)
+                            V1 = DefaultValue
+                        ENDWHERE
                     ELSEIF(VectorFileIsContourFile.EQ.2)THEN
-                        DO I=1,NumNodesGlobal
-                            IF(U2(I).LT.-99998.0)THEN
-                               U2(I) = DefaultValue
-                            ENDIF
-                            IF(V2(I).LT.-99998.0)THEN
-                               V2(I) = DefaultValue
-                            ENDIF
-                        ENDDO
+                        WHERE(U2.LT.-99998.0)
+                            U2 = DefaultValue
+                        ENDWHERE
+                        WHERE(V2.LT.-99998.0)
+                            V2 = DefaultValue
+                        ENDWHERE
                     ENDIF
 
                     IF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
