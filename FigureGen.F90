@@ -10207,6 +10207,7 @@
                 CALL MPI_BCAST(Y, NumNodesLocal, MPI_REAL, 0, MPI_COMM_WORLD, IERR)
                 CALL MPI_BCAST(Z, NumNodesLocal, MPI_REAL, 0, MPI_COMM_WORLD, IERR)
                 CALL MPI_BCAST(BathLocal, NumNodesLocal, MPI_REAL, 0, MPI_COMM_WORLD, IERR)
+                CALL MPI_BCAST(NumNodesMesh2, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, IERR)
                 CALL MPI_BCAST(TranslationTable, NumNodesGlobal, MPI_INTEGER, 0, MPI_COMM_WORLD, IERR)
 #endif
 
