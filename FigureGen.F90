@@ -5720,6 +5720,8 @@
                             ELSE
                                 CoastlineWB = "4"
                             ENDIF
+                            !WRITE(CoastlineThickness,*) TRIM(TempC(5:LEN_TRIM(TempC)))
+                            CoastlineThickness = TRIM(TempC(5:LEN_TRIM(TempC)))
                         ENDIF
                     ENDIF
                 ENDIF
@@ -7138,9 +7140,9 @@
                                      //TRIM(ADJUSTL(ScaleHeightC))//"i/"//TRIM(ADJUSTL(ScaleWidthC))//"i"
                     Line = TRIM(Line)//" "//"-C"//TRIM(TempPath)//"ScalePalette.cpt"
                     IF(INDEX(Palette,"INTERVALS").LE.0)THEN
-                        Line = TRIM(Line)//" "//"-B"//TRIM(ADJUSTL(ScaleLabelEveryC))//"::/:"//TRIM(ContourUnits)//":"
+                        Line = TRIM(Line)//" "//"-B"//TRIM(ADJUSTL(ScaleLabelEveryC))//"::/:"//""""//TRIM(ContourUnits)//""""//":"
                     ELSEIF(INDEX(Palette,"INTERVALS").GT.0)THEN
-                        Line = TRIM(Line)//" "//"-B"//"::/:"//TRIM(ContourUnits)//":"
+                        Line = TRIM(Line)//" "//"-B"//"::/:"//""""//TRIM(ContourUnits)//""""//":"
                         Line = TRIM(Line)//" "//"-L"
                     ENDIF
                     IF(TRIM(ContourFileType).EQ."HWM-CSV")THEN
@@ -7298,7 +7300,7 @@
                         Line = TRIM(Line)//" "//"-D"//TRIM(ADJUSTL(SideBarXC))//"i/"//TRIM(ADJUSTL(ContourScaleYC))//"i/" &
                                          //TRIM(ADJUSTL(ScaleHeightC))//"i/"//TRIM(ADJUSTL(ScaleWidthC))//"i"
                         Line = TRIM(Line)//" "//"-C"//TRIM(ParticlePalette)
-                        Line = TRIM(Line)//" "//"-B"//TRIM(ADJUSTL(ScaleLabelEveryC))//"::/:"//TRIM(ContourUnits)//":"
+                        Line = TRIM(Line)//" "//"-B"//TRIM(ADJUSTL(ScaleLabelEveryC))//"::/:"//""""//TRIM(ContourUnits)//""""//":"
                         IF(KeepOpen(7).EQ.1)THEN
                             Line = TRIM(Line)//" "//"-K"
                         ENDIF
