@@ -10059,13 +10059,13 @@
             READ(221,'(A)') JunkC
             NumWindSnaps = 0
             DO
-                NumWindSnaps = NumWindSnaps + 1
                 READ(221,11,IOSTAT=IOS) iLat,iLong,dx,dy,swlat,swlong,&
                     icymdhr,imin
                 IF(IOS.NE.0)THEN
                     CLOSE(221)
                     RETURN
                 ENDIF
+                NumWindSnaps = NumWindSnaps + 1
                 IF(TRIM(FILETYPE).EQ."PRESS")THEN
                     READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
                 ELSEIF(TRIM(FILETYPE).EQ."WIND")THEN
