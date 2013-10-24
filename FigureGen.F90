@@ -1450,7 +1450,7 @@
             INTEGER             :: NumSubRecords = 1
             INTEGER             :: OptimizeContours = 0
             INTEGER,ALLOCATABLE :: RecordsList(:)
-            INTEGER             :: RemoveFiles = 1
+            INTEGER             :: RemoveFiles = 0
             INTEGER             :: Resolution
             INTEGER             :: SmallJPGWidth
             INTEGER             :: SplitBy
@@ -6909,7 +6909,12 @@
                                                "f"//TRIM(ADJUSTL(BorderIncrementMinorC))//"WeSn"
                         ENDIF
                         Line = TRIM(Line)//" "//"-I"
-                        Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(Fort14File)//".tri"
+                        IF(TRIM(ContourFileType).EQ."OWI-PRESS".OR.TRIM(ContourFileType).EQ."OWI-WIND")THEN
+                            !Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(ContourFile1)//".tri"
+                            !...Let GMT triangulate on its own
+                        ELSE    
+                            Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(Fort14File)//".tri"
+                        ENDIF    
                         IF(KeepOpen(1).EQ.1)THEN
                             Line = TRIM(Line)//" "//"-K"
                         ENDIF
@@ -7063,7 +7068,11 @@
                         ELSE
                             Line = TRIM(Line)//" "//"-W"
                         ENDIF
-                        Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(Fort14File)//".tri"
+                        IF(TRIM(ContourFileType).EQ."OWI-PRESS".OR.TRIM(ContourFileType).EQ."OWI-WIND")THEN
+                            !...Lets use GMT triangulation
+                        ELSE
+                            Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(Fort14File)//".tri"
+                        ENDIF    
                         IF(KeepOpen(3).EQ.1)THEN
                             Line = TRIM(Line)//" "//"-K"
                         ENDIF
@@ -8148,6 +8157,7 @@
                 REAL(8)             :: JunkR
                 REAL                :: JunkR1
                 REAL                :: JunkR2
+                REAL(8),ALLOCATABLE :: OWI_XYZUV(:,:)
                 REAL                :: POW
                 REAL                :: TRUNC
                 REAL,ALLOCATABLE    :: Lat(:)
@@ -8481,6 +8491,26 @@
                                 CALL Check(NF90_CLOSE(NC_ID1))
 #endif
                             ENDIF
+
+                        ELSEIF((TRIM(ContourFileType).EQ."OWI-PRESS").OR.&
+                               (TRIM(ContourFileType).EQ."OWI-WIND"))THEN
+
+                            WRITE(UNIT=ContourXYZFile,FMT='(A,A,I4.4,A)') TRIM(ContourFile1), ".", Record,".xyz"
+                            OPEN(UNIT=12,FILE=TRIM(TempPath)//TRIM(ContourXYZFile),ACTION="WRITE")
+                            IF(ContourFileType.EQ."OWI-PRESS")THEN
+                                CALL READOWISNAP("PRESS",Record,ContourFile1,OWI_XYZUV,CurrentTime)
+                            ELSE
+                                CALL READOWISNAP("WIND",Record,ContourFile1,OWI_XYZUV,CurrentTime)
+                            ENDIF
+
+
+
+                            DO I = 1,SIZE(OWI_XYZUV(:,1))
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,3)*ContourConversionFactor
+                            ENDDO
+
+                            CLOSE(UNIT=12,STATUS="KEEP")
+
 
                         ELSEIF((TRIM(ContourFileType).EQ."13-MANNING").OR.           &
                                (INDEX(ContourFileType,"13-WIND-REDUCTION").GT.0).OR. &
@@ -9512,9 +9542,11 @@
 
                     WRITE(UNIT=VectorUFile,FMT='(A,A,I4.4,A)') TRIM(VectorFile),".",Record,".u"
                     WRITE(UNIT=VectorVFile,FMT='(A,A,I4.4,A)') TRIM(VectorFile),".",Record,".v"
-
                     OPEN(UNIT=17,FILE=TRIM(TempPath)//TRIM(VectorUFile)//".xyz",ACTION="WRITE")
                     OPEN(UNIT=18,FILE=TRIM(TempPath)//TRIM(VectorVFile)//".xyz",ACTION="WRITE")
+
+                    IF(TRIM(VectorFileType).EQ."ADCIRC-OUTPUT")THEN
+
                     IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
                         VectorFileIsContourFile = 0
                         UnitFile1Opened = .FALSE.
@@ -9651,11 +9683,21 @@
                             ENDIF
                         ENDDO
                     ENDIF
-
+                    
                     DO I=1,NumNodesLocal
                         WRITE(UNIT=17,FMT='(3(2X,F16.8))') X(I), Y(I), U1(XYZNodes(I)) * VectorConversionFactor
                         WRITE(UNIT=18,FMT='(3(2X,F16.8))') X(I), Y(I), V1(XYZNodes(I)) * VectorConversionFactor
                     ENDDO
+
+                    
+                    
+                    ELSEIF(TRIM(VectorFileType).EQ."OWI-WIND")THEN
+                        CALL ReadOWISnap("WIND",Record,VectorFile,OWI_XYZUV)
+                        DO I = 1,SIZE(OWI_XYZUV(:,1))
+                            WRITE(UNIT=17,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,4)*VectorConversionFactor
+                            WRITE(UNIT=18,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,5)*VectorConversionFactor
+                        ENDDO    
+                    ENDIF
 
                     CLOSE(UNIT=17,STATUS="KEEP")
                     CLOSE(UNIT=18,STATUS="KEEP")
@@ -9871,6 +9913,171 @@
 #endif
 
         END SUBROUTINE
+        
+        SUBROUTINE READOWISNAP(FILETYPE,MYRECORD,FILENAME,XYZUV,Time)
+            IMPLICIT NONE
+            CHARACTER(*),INTENT(IN) :: FILETYPE,FILENAME
+            INTEGER,INTENT(IN)      :: MYRECORD
+            REAL(8),INTENT(OUT),OPTIONAL :: Time
+            REAL(8),ALLOCATABLE,INTENT(OUT) :: XYZUV(:,:)
+            
+            CHARACTER(200)          :: OWIHEADER
+            CHARACTER(200)          :: DateString
+            
+            INTEGER                 :: LOCALSNAP
+            INTEGER                 :: IOS
+            INTEGER                 :: I
+            INTEGER                 :: J
+            INTEGER                 :: iLong
+            INTEGER                 :: iLat
+            INTEGER                 :: IDX
+            INTEGER                 :: icymdhr
+            INTEGER                 :: imin
+            INTEGER(8)              :: StartSec
+            INTEGER(8)              :: CurrentSec
+            
+            REAL(8)                 :: JunkR
+            REAL(8)                 :: swLat
+            REAL(8)                 :: swLong
+            REAL(8)                 :: dx
+            REAL(8)                 :: dy
+            REAL(8),ALLOCATABLE     :: OWI_GRIDDATA(:,:,:)
+
+            TYPE(DATEVAR)           :: MyDate
+            
+            OPEN(FILE=TRIM(FILENAME),UNIT=221,ACTION="READ")
+            READ(221,'(A)') OWIHEADER
+
+            READ(OWIHEADER(56:59),'(I4)')  MyDate%Year
+            READ(OWIHEADER(60:61),'(I2)')  MyDate%Month
+            READ(OWIHEADER(62:63),'(I2)')  MyDate%Day
+            READ(OWIHEADER(64:65),'(I2)')  MyDate%Hour
+            MyDate%Minute = 0
+            MyDate%Second = 0
+            StartSec = JulianSec(MyDate)
+
+            LOCALSNAP=0
+            DO
+                LOCALSNAP = LOCALSNAP + 1
+                READ(221,11,IOSTAT=IOS) iLat,iLong,dx,dy,swlat,swlong,&
+                    icymdhr,imin
+                IF(IOS.NE.0)THEN
+                    WRITE(*,'(A)') "ERROR READING OWI"
+                    STOP
+                ENDIF
+
+                IF(PRESENT(Time))THEN
+                    WRITE(DateString,'(I0,I0)') icymdhr,imin
+                    READ(DateString(1:4),'(I4)') MyDate%Year
+                    READ(DateString(5:6),'(I2)') MyDate%Month
+                    READ(DateString(7:8),'(I2)') MyDate%Day
+                    READ(DateString(9:10),'(I2)') MyDate%Hour
+                    READ(DateString(11:12),'(I2)') MyDate%Minute
+                    MyDate%Second = 0
+                    Time = DBLE(JulianSec(MyDate) - StartSec)
+                ENDIF
+    
+                IF(TRIM(FILETYPE).EQ."PRESS")THEN
+                    IF(LOCALSNAP.LT.MYRECORD)THEN
+                        READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
+                    ELSEIF(LOCALSNAP.EQ.MYRECORD)THEN
+                        IF(ALLOCATED(XYZUV))DEALLOCATE(XYZUV)
+                        IF(ALLOCATED(OWI_GRIDDATA))DEALLOCATE(OWI_GRIDDATA)
+                        ALLOCATE(XYZUV(1:iLong*iLat,1:5))
+                        ALLOCATE(OWI_GRIDDATA(1:iLong,1:iLat,1))
+                        IDX = 0
+                        READ(221,22) &
+                            ((OWI_GRIDDATA(I,J,1),I=1,iLong),J=1,iLat)
+                        DO I = 1,iLong
+                            DO J = 1,iLat
+                                IDX = IDX + 1
+                                XYZUV(IDX,1) = swLong + DBLE(I-1)*dx
+                                XYZUV(IDX,2) = swLat  + DBLE(J-1)*dy
+                                XYZUV(IDX,3) = OWI_Griddata(I,J,1)
+                                XYZUV(IDX,4) = OWI_Griddata(I,J,1)
+                                XYZUV(IDX,5) = 0D0
+                            ENDDO
+                        ENDDO
+                        CLOSE(221)
+                        RETURN
+                    ENDIF
+                ELSEIF(TRIM(FILETYPE).EQ."WIND")THEN
+                    IF(LOCALSNAP.LT.MYRECORD)THEN
+                        READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
+                        READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
+                    ELSEIF(LOCALSNAP.EQ.MYRECORD)THEN
+                        ALLOCATE(XYZUV(1:iLong*iLat,1:5))
+                        ALLOCATE(OWI_GRIDDATA(1:iLong,1:iLat,1:2))
+                        IDX = 0
+                        READ(221,22) &
+                            ((OWI_GRIDDATA(I,J,1),I=1,iLong),J=1,iLat)
+                        READ(221,22) &
+                            ((OWI_GRIDDATA(I,J,2),I=1,iLong),J=1,iLat)
+                        DO I = 1,iLong
+                            DO J = 1,iLat
+                                IDX = IDX + 1
+                                XYZUV(IDX,1) = swLong + DBLE(I-1)*dx
+                                XYZUV(IDX,2) = swLat  + DBLE(J-1)*dy
+                                XYZUV(IDX,3) = SQRT(OWI_Griddata(I,J,1)**2D0 + OWI_Griddata(I,J,2)**2D0)
+                                XYZUV(IDX,4) = OWI_Griddata(I,J,1)
+                                XYZUV(IDX,5) = OWI_Griddata(I,J,2)
+                            ENDDO
+                        ENDDO
+                        CLOSE(221)
+                        RETURN
+                    ENDIF
+                ENDIF
+            ENDDO    
+11          FORMAT(T6,I4,T16,I4,T23,F6.0,T32,F6.0,T44,F8.0,T58,F8.0,T69,I10,I2)
+22          FORMAT(8F10.0)
+                
+        END SUBROUTINE
+
+        SUBROUTINE GetOWILength(FileType,Filename,NumWindSnaps)
+            IMPLICIT NONE
+
+            CHARACTER(*),INTENT(IN) :: FileType,Filename
+            INTEGER,INTENT(OUT)     :: NumWindSnaps
+
+            INTEGER                 :: IOS
+            INTEGER                 :: I
+            INTEGER                 :: J
+            INTEGER                 :: iLat
+            INTEGER                 :: iLong
+            INTEGER                 :: icymdhr
+            INTEGER                 :: imin
+
+            REAL(8)                 :: dx
+            REAL(8)                 :: dy
+            REAL(8)                 :: swlat
+            REAL(8)                 :: swlong
+            REAL(8)                 :: JunkR
+
+            CHARACTER(200)          :: JunkC
+
+            OPEN(FILE=TRIM(FILENAME),UNIT=221,ACTION="READ")
+            READ(221,'(A)') JunkC
+            NumWindSnaps = 0
+            DO
+                NumWindSnaps = NumWindSnaps + 1
+                READ(221,11,IOSTAT=IOS) iLat,iLong,dx,dy,swlat,swlong,&
+                    icymdhr,imin
+                IF(IOS.NE.0)THEN
+                    CLOSE(221)
+                    RETURN
+                ENDIF
+                IF(TRIM(FILETYPE).EQ."PRESS")THEN
+                    READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
+                ELSEIF(TRIM(FILETYPE).EQ."WIND")THEN
+                    READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
+                    READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
+                ENDIF    
+            ENDDO
+11          FORMAT(T6,I4,T16,I4,T23,F6.0,T32,F6.0,T44,F8.0,T58,F8.0,T69,I10,I2)
+22          FORMAT(8F10.0)
+        END SUBROUTINE
+
+            
     
     END MODULE
 
@@ -10089,30 +10296,39 @@
                                 CALL Check(NF90_CLOSE(NC_ID))
 #endif
                             ENDIF
+                        ELSEIF(TRIM(ContourFileType).EQ."OWI-PRESS")THEN
+                            CALL GetOWILength("PRESS",ContourFile1,NumRecs)
+                        ELSEIF(TRIM(ContourFileType).EQ."OWI-WIND")THEN
+                            CALL GetOWILength("WIND",ContourFile1,NumRecs)
                         ENDIF
                     ENDIF
                     IF(IfPlotVectors.GT.0)THEN
-                        IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
-                            OPEN(UNIT=20,FILE=TRIM(VectorFile),ACTION="READ")
-                            READ(UNIT=20,FMT='(A)') JunkC
-                            READ(UNIT=20,FMT=*) NumRecs, JunkI, JunkR
-                            CLOSE(UNIT=20,STATUS="KEEP")
-                            IF(IfGoogle.EQ.1)THEN
-                                TimeStep = NINT(JunkR)
-                            ENDIF
-                        ELSEIF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
+    
+                        IF(TRIM(VectorFileType).EQ."ADCIRC-OUTPUT")THEN
+
+                            IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
+                                OPEN(UNIT=20,FILE=TRIM(VectorFile),ACTION="READ")
+                                READ(UNIT=20,FMT='(A)') JunkC
+                                READ(UNIT=20,FMT=*) NumRecs, JunkI, JunkR
+                                CLOSE(UNIT=20,STATUS="KEEP")
+                                IF(IfGoogle.EQ.1)THEN
+                                    TimeStep = NINT(JunkR)
+                                ENDIF
+                            ELSEIF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
-                            CALL Check(NF90_OPEN(TRIM(VectorFile),NF90_NOWRITE,NC_ID))
-                            CALL Check(NF90_INQUIRE(NC_ID,NC_Var))
-                            CALL Check(NF90_INQ_VARID(NC_ID,'time',NC_Var))
-                            CALL Check(NF90_INQUIRE_VARIABLE(NC_ID,NC_Var,dimids=NC_DimIDs))
-                            CALL Check(NF90_INQUIRE_DIMENSION(NC_ID,NC_DimIDs(1),len=NumRecs))
-                            CALL Check(NF90_GET_VAR(NC_ID,NC_Var,JunkTime,start=(/1/),count=(/2/)))
-                            IF(IfGoogle.EQ.1)THEN
-                                TimeStep = NINT(JunkTime(2)-JunkTime(1))
-                            ENDIF
-                            CALL Check(NF90_CLOSE(NC_ID))
+                                CALL Check(NF90_OPEN(TRIM(VectorFile),NF90_NOWRITE,NC_ID))
+                                CALL Check(NF90_INQUIRE(NC_ID,NC_Var))
+                                CALL Check(NF90_INQ_VARID(NC_ID,'time',NC_Var))
+                                CALL Check(NF90_INQUIRE_VARIABLE(NC_ID,NC_Var,dimids=NC_DimIDs))
+                                CALL Check(NF90_INQUIRE_DIMENSION(NC_ID,NC_DimIDs(1),len=NumRecs))
+                                CALL Check(NF90_GET_VAR(NC_ID,NC_Var,JunkTime,start=(/1/),count=(/2/)))
+                                IF(IfGoogle.EQ.1)THEN
+                                    TimeStep = NINT(JunkTime(2)-JunkTime(1))
+                                ENDIF
+                                CALL Check(NF90_CLOSE(NC_ID))
 #endif
+                            ENDIF
+
                         ENDIF
                     ENDIF
                     IF((IfPlotFilledContours.EQ.0.OR.TRIM(ContourFileType).NE."ADCIRC-OUTPUT") &
