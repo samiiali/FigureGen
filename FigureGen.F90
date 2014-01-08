@@ -1487,6 +1487,7 @@
             REAL                :: ScaleHeight
             REAL                :: ScaleLabelEvery
             REAL                :: ScaleWidth
+            REAL                :: StartTime
             REAL                :: TotalSimTime
             REAL                :: VectorConversionFactor
             REAL                :: VectorMag
@@ -5162,13 +5163,6 @@
                 ENDIF
  2222           CONTINUE
                 READ(UNIT=11,FMT='(A)')   ContourFileType
-                !...Parse out the total sim time in days (Useful for NetCDF on the fly processing)
-                IF(INDEX(ContourFileType,",").GT.0)THEN
-                    READ(ContourFileType(INDEX(ContourFileType,",")+1:LEN_TRIM(ContourFileType)),*) TotalSimTime
-                    ContourFileType = ContourFileType(1:INDEX(ContourFileType,",")-1)
-                ELSE
-                    TotalSimTime = -1D0
-                ENDIF   
                 IF(TRIM(ContourFileType).EQ."0")THEN
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "WARNING: ContourFileType = 0 and reset to ADCIRC-OUTPUT."
@@ -7806,7 +7800,7 @@
                     OPEN(UNIT=26,FILE=TRIM(TempPath)//TRIM(TimeCurrentFile),ACTION="WRITE")
                     IF(NumRecs.NE.0)THEN
                         IF(TotalSimTime.NE.-1D0)THEN
-                            WRITE(UNIT=26,FMT='(A,F4.2)') "0 0 0 ",CurrentTime/(TotalSimTime*86400D0)
+                            WRITE(UNIT=26,FMT='(A,F4.2)') "0 0 0 ",(CurrentTime-StartTime)/(TotalSimTime*86400D0-StartTime)
                         ELSE
                             WRITE(UNIT=26,FMT='(A,F4.2)') "0 0 0 ",1.0*Record/NumRecs
                         ENDIF    
@@ -8114,6 +8108,7 @@
                 INTEGER,ALLOCATABLE :: Count(:)
                 INTEGER,SAVE        :: CurrentRecord
                 INTEGER             :: I
+                INTEGER             :: IRET
                 INTEGER             :: J
                 INTEGER             :: JunkI
                 INTEGER,ALLOCATABLE :: NC(:,:)
@@ -8205,6 +8200,15 @@
                                 CALL Check(NF90_INQUIRE_DIMENSION(NC_ID1,NC_DimIDs(1),len=NumRecs))
                                 CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/Record/),count=(/1/)))
                                 CurrentTime = NC_Time(1)
+                                !...Grab the start and end times as well
+                                CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/1/),count=(/1/)))
+                                StartTime = NC_Time(1)
+                                iret = NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'rnday',TotalSimTime)
+                                IF(iret.NE.NF90_NOERR)THEN
+                                    TotalSimTime = -1D0
+                                ENDIF
+
+
                                 CALL FindMyNETCDFVariable(NC_ID1)
 #endif
                             ENDIF
@@ -8744,6 +8748,13 @@
                                 CALL Check(NF90_INQUIRE_DIMENSION(NC_ID1,NC_DimIDs(1),len=NumRecs))
                                 CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/Record/),count=(/1/)))
                                 CurrentTime = NC_Time(1)
+                                !...Grab the start and end times as well
+                                CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/1/),count=(/1/)))
+                                StartTime = NC_Time(1)
+                                iret = NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'rnday',TotalSimTime)
+                                IF(iret.NE.NF90_NOERR)THEN
+                                    TotalSimTime = -1D0
+                                ENDIF
                                 CALL FindMyNETCDFVariable(NC_ID1)
 #endif
                             ENDIF

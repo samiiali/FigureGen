@@ -48,7 +48,7 @@ ft/s                                               ! Alphanumeric label for unit
 8.0                                                ! Magnitude of vector to show in the vector scale (or FIND to determine from file).
 PARAMETERS FOR OVERALL PLOT(S):
 1,Tan                                              ! Boundaries flag: 0 to ignore, 1 to plot roads/levees from grid.
-1,Black,4,4                                        ! Coastline flag: 0 to ignore, 1 to plot coastline with color, resolution (1[Least]-4[Most]), water bodies (1[Least]-4[Most]).
+1,Black,4,4,1                                      ! Coastline flag: 0 to ignore, 1 to plot coastline with color, resolution (1[Least]-4[Most]), water bodies (1[Least]-4[Most]).
 0,Black,KatrinaTrack.txt                           ! Dots/lines flag: 0 to ignore, 1 to plot unconnected dots, 2 to plot connected line segments from an external file.
 0,Labels.txt                                       ! Labels flag: 0 to ignore, 1 to plot labels from external file.
 0,TL,2.0,CHG.eps                                   ! Logo flag: 0 to ignore, 1 to plot logo at position (TL,TR,BL,BR) and width (inches) from an external file.
