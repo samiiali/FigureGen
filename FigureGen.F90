@@ -1351,6 +1351,9 @@
             CHARACTER(LEN=50)   :: ContourFileFormat1
             CHARACTER(LEN=50)   :: ContourFileFormat2
             CHARACTER(LEN=50)   :: ContourFileType
+            CHARACTER(LEN=50),ALLOCATABLE :: ContourFileList(:)
+            CHARACTER(LEN=50)   :: ContourFileListFile
+            CHARACTER(LEN=50),ALLOCATABLE :: ContourFileTag(:)
             CHARACTER(LEN=40)   :: ContourLabelRotation
             CHARACTER(LEN=40)   :: ContourUnits
             CHARACTER(LEN=50)   :: ContourXYZFile
@@ -1437,6 +1440,7 @@
             INTEGER             :: KeepOpen(15)
             INTEGER             :: LabelsSize
             INTEGER             :: MyRank
+            INTEGER             :: NumContourFiles
             INTEGER             :: NumEdgeFiles
             INTEGER             :: NumLayers
             INTEGER             :: NumNodesGlobal
@@ -1462,6 +1466,7 @@
             INTEGER,ALLOCATABLE :: XYZNodes(:)
 
             LOGICAL             :: NeedTranslationTable
+            LOGICAL             :: OutputFileList
             LOGICAL             :: UseParticlePalette
             LOGICAL,ALLOCATABLE :: BdyNodes(:)
 
@@ -4156,7 +4161,58 @@
                 WRITE(*,'(A,I4.4,A)') "Core ", MyRank, " created the node-to-node translation table."
             ENDIF
 
-        END SUBROUTINE    
+        END SUBROUTINE
+
+        SUBROUTINE ReadOutputFileList(ListFile,ListLength,List,Tag,Error)
+            IMPLICIT NONE
+            INTEGER,INTENT(OUT)      :: ListLength
+            CHARACTER(*),INTENT(IN)  :: ListFile
+            CHARACTER(*),ALLOCATABLE,INTENT(OUT) :: List(:)
+            CHARACTER(*),ALLOCATABLE,INTENT(OUT) :: Tag(:)
+            LOGICAL,INTENT(OUT)      :: Error
+            INTEGER                  :: I
+            INTEGER                  :: J
+            LOGICAL                  :: FOUND
+
+            ERROR = .FALSE.
+            INQUIRE(FILE=TRIM(ListFile),EXIST=FOUND)
+            IF(.NOT.FOUND)THEN
+                WRITE(*,'(A)') "ERROR: The ADCIRC-OUTPUT-LIST file was not found."
+                ERROR = .TRUE.
+                RETURN
+            ENDIF
+
+            OPEN(FILE=TRIM(ListFile),UNIT=60,ACTION="READ",STATUS="OLD")
+            READ(60,*) ListLength
+            ALLOCATE(List(1:ListLength))
+            ALLOCATE(Tag(1:ListLength))
+            
+            DO I = 1,ListLength
+                READ(60,*) List(I),Tag(I)
+                INQUIRE(FILE=TRIM(List(I)),EXIST=FOUND)
+                IF(.NOT.FOUND)THEN
+                    Error = .TRUE.
+                    WRITE(*,'(3A)') "ERROR: The file: ",TRIM(List(I))," was not found."
+                    CLOSE(60)
+                    RETURN
+                ENDIF
+            ENDDO
+
+            !...Sanity check so we don't write same file
+            DO I = 1,ListLength
+                DO J = 1,ListLength
+                    IF(I.EQ.J)CYCLE
+                    IF(Tag(I).EQ.Tag(J))THEN
+                        Error = .TRUE.
+                        WRITE(*,'(A)') "ERROR: No two output list tags may match."
+                        RETURN
+                    ENDIF
+                ENDDO
+            ENDDO
+
+            RETURN
+
+        END SUBROUTINE
 
 
 
@@ -5163,6 +5219,15 @@
                 ENDIF
  2222           CONTINUE
                 READ(UNIT=11,FMT='(A)')   ContourFileType
+                
+                !...Check if we're doing a list of plots
+                IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST")THEN
+                    OutputFileList = .TRUE.
+                    ContourFileListFile = ContourFile1
+                ELSE
+                    OutputFileList = .FALSE.
+                ENDIF
+
                 IF(TRIM(ContourFileType).EQ."0")THEN
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "WARNING: ContourFileType = 0 and reset to ADCIRC-OUTPUT."
@@ -6163,6 +6228,7 @@
                 READ(UNIT=11,FMT=*)       NumRecords
                IF(((TRIM(ContourFileType).EQ."GRID-BATH").OR.      &
                    (INDEX(ContourFileType,"GRID-DECOMP").GT.0).OR. &
+                   (INDEX(ContourFileType,"ADCIRC-OUTPUT-LIST").GT.0).OR.&
                    (TRIM(ContourFileType).EQ."GRID-SIZE")).AND.    &
                    (IfPlotVectors.EQ.0).AND.(IfPlotParticles.EQ.0))THEN
                    IF(MyRank.EQ.0)THEN
@@ -6662,8 +6728,10 @@
                     CLOSE(UNIT=30,STATUS="DELETE")
                 ENDIF
 
-                IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0))THEN
+                IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0).AND..NOT.OutputFileList)THEN
                     WRITE(UNIT=PlotName,FMT='(A,I4.4)') TRIM(AlphaLabel),Record
+                ELSEIF(OutputFileList)THEN
+                    WRITE(UNIT=PlotName,FMT='(A,A)') TRIM(AlphaLabel),TRIM(ContourFileTag(Record))
                 ELSE
                     WRITE(UNIT=PlotName,FMT='(A,I4.4,A,I2.2,A,I2.2,A,I2.2)') TRIM(AlphaLabel),Record,"-",IL1,"-",IL2,"-",IL3
                 ENDIF
@@ -8096,6 +8164,7 @@
                 INTRINSIC           :: TRIM
 
                 CHARACTER(LEN=50)   :: AttributeLabel
+                CHARACTER(LEN=50)   :: ContourFile1Local
                 CHARACTER(LEN=1)    :: JunkC
                 CHARACTER(LEN=250)  :: UnitFile1
                 CHARACTER(LEN=250)  :: UnitFile2
@@ -8125,6 +8194,7 @@
                 INTEGER             :: NC_Var4
 #endif
                 INTEGER             :: ContourFileNumCols2
+                INTEGER             :: LocalRecord
                 INTEGER             :: NumAttributes1
                 INTEGER             :: NumAttributes2
                 INTEGER             :: NumElems
@@ -8178,27 +8248,46 @@
 
                     IF((IfPlotFilledContours.EQ.1).OR.(IfPlotContourLines.EQ.1))THEN
 
-                        IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT")THEN
+                        IF((TRIM(ContourFileType).EQ."ADCIRC-OUTPUT").OR.&
+                           (TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST"))THEN
 
-                            WRITE(UNIT=ContourXYZFile,FMT='(A,A,I4.4,A)') TRIM(ContourFile1), ".", Record, ".xyz"
+                            IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST")THEN
+                                ContourFile1Local = ContourFileList(Record)
+                                LocalRecord = 1
+                                CurrentRecord = 1
+                                IF(INDEX(ContourFile1Local,".nc").LE.0)THEN
+                                    ContourFileFormat1 = "ASCII"
+                                ELSE
+                                    ContourFileFormat1 = "NETCDF"
+                                ENDIF
+                            ELSE
+                                ContourFile1Local = ContourFile1
+                                LocalRecord = Record
+                            ENDIF
+
+                            WRITE(UNIT=ContourXYZFile,FMT='(A,A,I4.4,A)') TRIM(ContourFile1Local), ".", Record, ".xyz"
                             OPEN(UNIT=12,FILE=TRIM(TempPath)//TRIM(ContourXYZFile),ACTION="WRITE")
 
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                 UnitFile1Opened = .FALSE.
                                 INQUIRE(UNIT=19,OPENED=UnitFile1Opened)
-                                IF(.NOT.UnitFile1Opened)THEN
-                                    OPEN(UNIT=19,FILE=TRIM(ContourFile1),ACTION="READ")
+                                IF(.NOT.UnitFile1Opened.OR.OutputFileList)THEN
+                                    IF(.NOT.UnitFile1Opened)THEN
+                                        OPEN(UNIT=19,FILE=TRIM(ContourFile1Local),ACTION="READ")
+                                    ELSEIF(OutputFileList)THEN
+                                        REWIND(19)
+                                    ENDIF
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT=*) NumRecs, JunkI, JunkR, JunkI, ContourFileNumCols
                                     CurrentRecord = 1
                                 ENDIF
                             ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
-                                CALL Check(NF90_OPEN(TRIM(ContourFile1),NF90_NOWRITE,NC_ID1))
+                                CALL Check(NF90_OPEN(TRIM(ContourFile1Local),NF90_NOWRITE,NC_ID1))
                                 CALL Check(NF90_INQ_VARID(NC_ID1,'time',NC_Var))
                                 CALL Check(NF90_INQUIRE_VARIABLE(NC_ID1,NC_Var,dimids=NC_DimIDs))
                                 CALL Check(NF90_INQUIRE_DIMENSION(NC_ID1,NC_DimIDs(1),len=NumRecs))
-                                CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/Record/),count=(/1/)))
+                                CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/LocalRecord/),count=(/1/)))
                                 CurrentTime = NC_Time(1)
                                 !...Grab the start and end times as well
                                 CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/1/),count=(/1/)))
@@ -8214,14 +8303,14 @@
                             ENDIF
 
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
-                                IF(CurrentRecord.LT.Record)THEN
-                                    DO J=CurrentRecord,Record-1
+                                IF(CurrentRecord.LT.LocalRecord)THEN
+                                    DO J=CurrentRecord,LocalRecord-1
                                         NumNodes1 = NumNodesGlobal
-                                        CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),CurrentTime,JunkR, &
+                                        CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),CurrentTime,JunkR, &
                                                            NumNodes1,DefaultValue)
                                         DO I=1,NumNodes1
 #ifdef SLOWREAD
-                                            CALL ReadNodeVals(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),0,JunkI,JunkR1,JunkR2)
+                                            CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),0,JunkI,JunkR1,JunkR2)
 #else
                                             READ(19,*)
 #endif
@@ -8232,7 +8321,7 @@
 
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                 NumNodes1 = NumNodesGlobal
-                                CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),CurrentTime,JunkR, &
+                                CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),CurrentTime,JunkR, &
                                                    NumNodes1,DefaultValue)
                             ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
@@ -8252,7 +8341,7 @@
                             IF(.NOT.ALLOCATED(V1))    ALLOCATE(V1(1:NumNodesGlobal))
                             IF(.NOT.ALLOCATED(Vels1)) ALLOCATE(Vels1(1:NumNodesGlobal))
 
-                            IF(INDEX(TRIM(ContourFile1),"64").GT.0)THEN
+                            IF(INDEX(TRIM(ContourFile1Local),"64").GT.0)THEN
                                 DO I=1,NumNodesGlobal
                                     U1(I)    = -99999.0
                                     V1(I)    = -99999.0
@@ -8276,9 +8365,9 @@
 #ifdef NETCDF
                                 
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=LocalRecord)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=LocalRecord)
                                 ENDIF
 #endif
                             ENDIF
@@ -8286,10 +8375,10 @@
                             DO I=1,NumNodes1
 
                                 IF(ContourFileNumCols.EQ.1)THEN
-
+                                    
                                     IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
 #ifdef SLOWREAD
-                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),1,JunkI,JunkR1,JunkR2)
+                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),1,JunkI,JunkR1,JunkR2)
 #else
                                         READ(19,*) JunkI,JunkR1
 #endif
@@ -8311,7 +8400,7 @@
 
                                     IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN 
 #ifdef SLOWREAD
-                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),2,JunkI,JunkR1,JunkR2)
+                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),2,JunkI,JunkR1,JunkR2)
 #else
                                         READ(19,*) JunkI,JunkR1,JunkR2
 #endif
@@ -10140,6 +10229,7 @@
 
                 LOGICAL             :: InputFileError
                 LOGICAL             :: InputFileFound
+                LOGICAL             :: ReadError
 
                 REAL                :: JunkR
                 REAL                :: JunkTime(2)
@@ -10221,6 +10311,7 @@
 #ifdef CMPI
                    DO I=1,NumProcs-1
                        CALL MPI_SEND(0,1,MPI_INTEGER,I,1,MPI_COMM_WORLD,IERR)
+                       JunkR = 0D0
                        DO J=1,10000
                            JunkR=JunkR+(0.5**J)**2
                        ENDDO
@@ -10232,7 +10323,31 @@
                         CALL MPI_FINALIZE(IERR)
 #endif
                         STOP
-                   ENDIF     
+                   ENDIF
+                   
+                   IF(OutputFileList)THEN
+                       CALL ReadOutputFileList(ContourFileListFile,NumContourFiles,ContourFileList,ContourFileTag,ReadError)
+#ifdef CMPI            
+                       CALL MPI_BCAST(ReadError,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERR)
+#endif
+                       IF(ReadError)THEN
+#ifdef CMPI
+                           CALL MPI_FINALIZE(IERR)
+#endif                           
+                           STOP
+                       ENDIF 
+#ifdef CMPI                       
+                       CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
+                       DO I=1,NumContourFiles
+                           CALL MPI_BCAST(ContourFileList(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                           CALL MPI_BCAST(ContourFileTag(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                       ENDDO    
+#endif                       
+                       NumRecords = NumContourFiles
+                   ENDIF
+                   
+    
+
                 ELSE
 #ifdef CMPI                
                    CALL MPI_RECV(JunkI,1,MPI_INTEGER,0,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE,IERR)
@@ -10241,6 +10356,23 @@
                         CALL MPI_FINALIZE(IERR)
                         STOP
                    ENDIF
+                   
+                   IF(OutputFileList)THEN
+                      CALL MPI_BCAST(ReadError,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERR)
+                      IF(ReadError)THEN
+                         CALL MPI_FINALIZE(IERR)
+                         STOP
+                      ENDIF
+
+                      CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
+                      ALLOCATE(ContourFileList(NumContourFiles))
+                      ALLOCATE(ContourFileTag(NumContourFiles))
+                      DO I=1,NumContourFiles
+                         CALL MPI_BCAST(ContourFileList(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                         CALL MPI_BCAST(ContourFileTag(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                      ENDDO   
+                      NumRecords = NumContourFiles
+                   ENDIF   
 #endif                   
                 ENDIF
 
@@ -10631,6 +10763,10 @@
                             IL1    = RecordsIndex(WorkingRecord,2)
                             IL2    = RecordsIndex(WorkingRecord,3)
                             IL3    = RecordsIndex(WorkingRecord,4)
+
+                            IF(OutputFileList)THEN
+                                Record = WorkingRecord
+                            ENDIF
 
                             WRITE(UNIT=RecordC,FMT='(I4.4)') Record
 
