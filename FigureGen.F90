@@ -1353,6 +1353,7 @@
             CHARACTER(LEN=50)   :: ContourFileType
             CHARACTER(LEN=50),ALLOCATABLE :: ContourFileList(:)
             CHARACTER(LEN=50)   :: ContourFileListFile
+            CHARACTER(LEN=50),ALLOCATABLE :: ContourFileTag(:)
             CHARACTER(LEN=40)   :: ContourLabelRotation
             CHARACTER(LEN=40)   :: ContourUnits
             CHARACTER(LEN=50)   :: ContourXYZFile
@@ -4162,13 +4163,15 @@
 
         END SUBROUTINE
 
-        SUBROUTINE ReadOutputFileList(ListFile,ListLength,List,Error)
+        SUBROUTINE ReadOutputFileList(ListFile,ListLength,List,Tag,Error)
             IMPLICIT NONE
             INTEGER,INTENT(OUT)      :: ListLength
             CHARACTER(*),INTENT(IN)  :: ListFile
             CHARACTER(*),ALLOCATABLE,INTENT(OUT) :: List(:)
+            CHARACTER(*),ALLOCATABLE,INTENT(OUT) :: Tag(:)
             LOGICAL,INTENT(OUT)      :: Error
             INTEGER                  :: I
+            INTEGER                  :: J
             LOGICAL                  :: FOUND
 
             ERROR = .FALSE.
@@ -4182,16 +4185,29 @@
             OPEN(FILE=TRIM(ListFile),UNIT=60,ACTION="READ",STATUS="OLD")
             READ(60,*) ListLength
             ALLOCATE(List(1:ListLength))
+            ALLOCATE(Tag(1:ListLength))
             
             DO I = 1,ListLength
-                READ(60,'(A)') List(I)
+                READ(60,*) List(I),Tag(I)
                 INQUIRE(FILE=TRIM(List(I)),EXIST=FOUND)
                 IF(.NOT.FOUND)THEN
                     Error = .TRUE.
-                    WRITE(*,'(A)') "ERROR: The file: ",TRIM(List(I))," was not found."
+                    WRITE(*,'(3A)') "ERROR: The file: ",TRIM(List(I))," was not found."
                     CLOSE(60)
                     RETURN
                 ENDIF
+            ENDDO
+
+            !...Sanity check so we don't write same file
+            DO I = 1,ListLength
+                DO J = 1,ListLength
+                    IF(I.EQ.J)CYCLE
+                    IF(Tag(I).EQ.Tag(J))THEN
+                        Error = .TRUE.
+                        WRITE(*,'(A)') "ERROR: No two output list tags may match."
+                        RETURN
+                    ENDIF
+                ENDDO
             ENDDO
 
             RETURN
@@ -6712,8 +6728,10 @@
                     CLOSE(UNIT=30,STATUS="DELETE")
                 ENDIF
 
-                IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0))THEN
+                IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0).AND..NOT.OutputFileList)THEN
                     WRITE(UNIT=PlotName,FMT='(A,I4.4)') TRIM(AlphaLabel),Record
+                ELSEIF(OutputFileList)THEN
+                    WRITE(UNIT=PlotName,FMT='(A,A)') TRIM(AlphaLabel),TRIM(ContourFileTag(Record))
                 ELSE
                     WRITE(UNIT=PlotName,FMT='(A,I4.4,A,I2.2,A,I2.2,A,I2.2)') TRIM(AlphaLabel),Record,"-",IL1,"-",IL2,"-",IL3
                 ENDIF
@@ -8236,6 +8254,12 @@
                             IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST")THEN
                                 ContourFile1Local = ContourFileList(Record)
                                 LocalRecord = 1
+                                CurrentRecord = 1
+                                IF(INDEX(ContourFile1Local,".nc").LE.0)THEN
+                                    ContourFileFormat1 = "ASCII"
+                                ELSE
+                                    ContourFileFormat1 = "NETCDF"
+                                ENDIF
                             ELSE
                                 ContourFile1Local = ContourFile1
                                 LocalRecord = Record
@@ -8247,8 +8271,12 @@
                             IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                 UnitFile1Opened = .FALSE.
                                 INQUIRE(UNIT=19,OPENED=UnitFile1Opened)
-                                IF(.NOT.UnitFile1Opened)THEN
-                                    OPEN(UNIT=19,FILE=TRIM(ContourFile1Local),ACTION="READ")
+                                IF(.NOT.UnitFile1Opened.OR.OutputFileList)THEN
+                                    IF(.NOT.UnitFile1Opened)THEN
+                                        OPEN(UNIT=19,FILE=TRIM(ContourFile1Local),ACTION="READ")
+                                    ELSEIF(OutputFileList)THEN
+                                        REWIND(19)
+                                    ENDIF
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT=*) NumRecs, JunkI, JunkR, JunkI, ContourFileNumCols
                                     CurrentRecord = 1
@@ -8347,7 +8375,7 @@
                             DO I=1,NumNodes1
 
                                 IF(ContourFileNumCols.EQ.1)THEN
-
+                                    
                                     IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
 #ifdef SLOWREAD
                                         CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),1,JunkI,JunkR1,JunkR2)
@@ -10298,7 +10326,7 @@
                    ENDIF
                    
                    IF(OutputFileList)THEN
-                       CALL ReadOutputFileList(ContourFileListFile,NumContourFiles,ContourFileList,ReadError)
+                       CALL ReadOutputFileList(ContourFileListFile,NumContourFiles,ContourFileList,ContourFileTag,ReadError)
 #ifdef CMPI            
                        CALL MPI_BCAST(ReadError,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERR)
 #endif
@@ -10311,8 +10339,8 @@
 #ifdef CMPI                       
                        CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
                        DO I=1,NumContourFiles
-                           TempC = ContourFileList(I)
-                           CALL MPI_BCAST(TempC,60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                           CALL MPI_BCAST(ContourFileList(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                           CALL MPI_BCAST(ContourFileTag(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
                        ENDDO    
 #endif                       
                        NumRecords = NumContourFiles
@@ -10338,9 +10366,10 @@
 
                       CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
                       ALLOCATE(ContourFileList(NumContourFiles))
+                      ALLOCATE(ContourFileTag(NumContourFiles))
                       DO I=1,NumContourFiles
-                         CALL MPI_BCAST(TempC,60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
-                         ContourFileList(I) = TRIM(TempC)
+                         CALL MPI_BCAST(ContourFileList(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                         CALL MPI_BCAST(ContourFileTag(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
                       ENDDO   
                       NumRecords = NumContourFiles
                    ENDIF   
