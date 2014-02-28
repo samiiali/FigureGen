@@ -5202,13 +5202,12 @@
                     ENDIF
                 ENDIF
  2222           CONTINUE
-                READ(UNIT=11,FMT='(A)')   TempC
+                READ(UNIT=11,FMT='(A)')   ContourFileType
                 
                 !...Check if we're doing a list of plots
-                IF((INDEX(TempC,",").GT.0).AND.(TempC(1:INDEX(TempC,",")-1).EQ."ADCIRC-OUTPUT-LIST"))THEN
+                IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST")THEN
                     OutputFileList = .TRUE.
-                    ContourFileType = TempC(1:INDEX(TempC,",")-1)
-                    ContourFileListFile = TempC(INDEX(TempC,",")+1:LEN_TRIM(TempC))
+                    ContourFileListFile = ContourFile1
                 ELSE
                     OutputFileList = .FALSE.
                     ContourFileType = TempC
@@ -10285,6 +10284,7 @@
 #ifdef CMPI
                    DO I=1,NumProcs-1
                        CALL MPI_SEND(0,1,MPI_INTEGER,I,1,MPI_COMM_WORLD,IERR)
+                       JunkR = 0D0
                        DO J=1,10000
                            JunkR=JunkR+(0.5**J)**2
                        ENDDO
@@ -10297,7 +10297,7 @@
 #endif
                         STOP
                    ENDIF
-                    
+                   
                    IF(OutputFileList)THEN
                        CALL ReadOutputFileList(ContourFileListFile,NumContourFiles,ContourFileList,ReadError)
 #ifdef CMPI            
@@ -10311,9 +10311,12 @@
                        ENDIF 
 #ifdef CMPI                       
                        CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
-                       CALL MPI_BCAST(ContourFileList,NumContourFiles,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
-                       NumRecords = NumContourFiles
+                       DO I=1,NumContourFiles
+                           TempC = ContourFileList(I)
+                           CALL MPI_BCAST(TempC,60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                       ENDDO    
 #endif                       
+                       NumRecords = NumContourFiles
                    ENDIF
                    
     
@@ -10327,16 +10330,21 @@
                         STOP
                    ENDIF
                    
-                   CALL MPI_BCAST(ReadError,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERR)
-                   IF(ReadError)THEN
-                       CALL MPI_FINALIZE(IERR)
-                       STOP
-                   ENDIF
+                   IF(OutputFileList)THEN
+                      CALL MPI_BCAST(ReadError,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERR)
+                      IF(ReadError)THEN
+                         CALL MPI_FINALIZE(IERR)
+                         STOP
+                      ENDIF
 
-                   CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
-                   ALLOCATE(ContourFileList(NumContourFiles))
-                   CALL MPI_BCAST(ContourFileList,NumContourFiles,0,MPI_COMM_WORLD,IERR)
-                   NumRecords = NumContourFiles
+                      CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
+                      ALLOCATE(ContourFileList(NumContourFiles))
+                      DO I=1,NumContourFiles
+                         CALL MPI_BCAST(TempC,60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
+                         ContourFileList(I) = TRIM(TempC)
+                      ENDDO   
+                      NumRecords = NumContourFiles
+                   ENDIF   
 #endif                   
                 ENDIF
 
@@ -10727,6 +10735,10 @@
                             IL1    = RecordsIndex(WorkingRecord,2)
                             IL2    = RecordsIndex(WorkingRecord,3)
                             IL3    = RecordsIndex(WorkingRecord,4)
+
+                            IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST")THEN
+                                Record = WorkingRecord
+                            ENDIF
 
                             WRITE(UNIT=RecordC,FMT='(I4.4)') Record
 
