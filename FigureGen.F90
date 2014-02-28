@@ -5210,7 +5210,6 @@
                     ContourFileListFile = ContourFile1
                 ELSE
                     OutputFileList = .FALSE.
-                    ContourFileType = TempC
                 ENDIF
 
                 IF(TRIM(ContourFileType).EQ."0")THEN
@@ -8260,7 +8259,7 @@
                                 CALL Check(NF90_INQ_VARID(NC_ID1,'time',NC_Var))
                                 CALL Check(NF90_INQUIRE_VARIABLE(NC_ID1,NC_Var,dimids=NC_DimIDs))
                                 CALL Check(NF90_INQUIRE_DIMENSION(NC_ID1,NC_DimIDs(1),len=NumRecs))
-                                CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/Record/),count=(/1/)))
+                                CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/LocalRecord/),count=(/1/)))
                                 CurrentTime = NC_Time(1)
                                 !...Grab the start and end times as well
                                 CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/1/),count=(/1/)))
@@ -8338,9 +8337,9 @@
 #ifdef NETCDF
                                 
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=LocalRecord)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=LocalRecord)
                                 ENDIF
 #endif
                             ENDIF
@@ -10736,7 +10735,7 @@
                             IL2    = RecordsIndex(WorkingRecord,3)
                             IL3    = RecordsIndex(WorkingRecord,4)
 
-                            IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST")THEN
+                            IF(OutputFileList)THEN
                                 Record = WorkingRecord
                             ENDIF
 

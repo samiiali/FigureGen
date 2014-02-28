@@ -14,7 +14,7 @@ machine=UND-athos
 if [ $machine == "UND-athos" ] ; then
     FC="ifort"
     MPIFC="mpif90"
-    FFLAGS="-xSSE4.2 -O3 -assume buffered_io -i-dynamic"
+    FFLAGS="-assume buffered_io -i-dynamic -g -traceback"
     MPIAVAIL=1
     MPIFLAGS="-DCMPI"
     NCAVAIL=1
