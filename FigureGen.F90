@@ -2584,11 +2584,11 @@
 #ifdef NETCDF
                                     NumNodes1 = NumNodesGlobal
                                     CALL GetNETCDFVarID(NC_ID1,NC_VAR,NC_VAR2,ContourFileNumCols)
-#ifdef VARFILLVAL                                    
-                                    CALL Check(NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                                    CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
+                                    
+                                    ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
+                                    IF(ierr.NE.NF90_NOERR)THEN
+                                        CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
+                                    ENDIF    
 
 #endif
                                 ENDIF
@@ -2943,11 +2943,11 @@
 #ifdef NETCDF
                                     NumNodes1 = NumNodesGlobal
                                     CALL GetNetCDFVarID(NC_ID1,NC_Var,NC_Var2,ContourFileNumCols)
-#ifdef VARFILLVAL                                    
-                                    CALL Check(NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                                    CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
+                                    
+                                    ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
+                                    IF(ierr.NE.NF90_NOERR)THEN
+                                        CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
+                                    ENDIF    
 
 #endif
                                 ENDIF
@@ -2958,11 +2958,10 @@
 #ifdef NETCDF
                                     NumNodes2 = NumNodesGlobal
                                     CALL GetNetCDFVarid(NC_ID2,NC_Var,NC_Var2,ContourFileNumCols)
-#ifdef VARFILLVAL                                    
-                                    CALL Check(NF90_GET_ATT(NC_ID2,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                                    CALL Check(NF90_GET_ATT(NC_ID2,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
+                                    ierr = NF90_GET_ATT(NC_ID2,NC_Var,'_FillValue',DefaultValue)
+                                    IF(ierr.NE.NF90_NOERR)THEN
+                                        CALL Check(NF90_GET_ATT(NC_ID2,NF90_GLOBAL,'_FillValue',DefaultValue))
+                                    ENDIF    
 
 #endif
                                 ENDIF
@@ -3323,11 +3322,10 @@
                             NumNodes1 = NumNodesGlobal
                             CALL GetNetCDFVarID(NC_ID,NC_Var,NC_Var2,ContourFileNumCols)
 
-#ifdef VARFILLVAL                                    
-                            CALL Check(NF90_GET_ATT(NC_ID,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                            CALL Check(NF90_GET_ATT(NC_ID,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
+                            ierr = NF90_GET_ATT(NC_ID,NC_Var,'_FillValue',DefaultValue)
+                            IF(ierr.NE.NF90_NOERR)THEN
+                                CALL Check(NF90_GET_ATT(NC_ID,NF90_GLOBAL,'_FillValue',DefaultValue))
+                            ENDIF    
 
 #endif
                         ENDIF
@@ -4210,6 +4208,13 @@
                     ENDIF
                 ENDDO
             ENDDO
+
+            !...Build the RecordsList array
+            IF(ALLOCATED(RecordsList))DEALLOCATE(RecordsList)
+            ALLOCATE(RecordsList(1:ListLength))
+            DO I = 1,ListLength
+                RecordsList(I) = I
+            ENDDO    
 
             RETURN
 
@@ -8329,11 +8334,10 @@
                                 NumNodes1 = NumNodesGlobal
                                 CALL GetNETCDFVARID(NC_ID1,NC_Var,NC_Var2,ContourFileNumCols)
 
-#ifdef VARFILLVAL                                    
-                                CALL Check(NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                                CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
+                                ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
+                                IF(ierr.NE.NF90_NOERR)THEN
+                                    CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
+                                ENDIF    
 
 #endif
                             ENDIF
@@ -8910,11 +8914,11 @@
 #ifdef NETCDF
                                 NumNodes1 = NumNodesGlobal
                                 CALL GetNetCDFVarID(NC_ID1,NC_Var,NC_Var2,ContourFileNumCols)
-#ifdef VARFILLVAL                                    
-                                CALL Check(NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                                CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
+                                
+                                ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
+                                IF(ierr.NE.NF90_NOERR)THEN
+                                    CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
+                                ENDIF    
 
 #endif
                             ENDIF
@@ -8926,11 +8930,11 @@
 #ifdef NETCDF
                                 NumNodes2 = NumNodesMesh2 
                                 CALL GetNetCDFVARID(NC_ID2,NC_Var3,NC_Var4,ContourFileNumCols2)
-#ifdef VARFILLVAL                                    
-                                CALL Check(NF90_GET_ATT(NC_ID2,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                                CALL Check(NF90_GET_ATT(NC_ID2,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
+                                
+                                ierr = NF90_GET_ATT(NC_ID2,NC_Var,'_FillValue',DefaultValue)
+                                IF(ierr.NE.NF90_NOERR)THEN
+                                    CALL Check(NF90_GET_ATT(NC_ID2,NF90_GLOBAL,'_FillValue',DefaultValue))
+                                ENDIF    
 
 #endif
                             ENDIF
@@ -9726,12 +9730,10 @@
                         NumNodes1 = NumNodesGlobal
                         CALL GetNETCDFVarID(NC_ID1,NC_Var,NC_Var2,VectorFileNumCols)
 
-#ifdef VARFILLVAL                                    
-                        CALL Check(NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue))
-#else                                    
-                        CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-#endif
-
+                        ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
+                        IF(ierr.NE.NF90_NOERR)THEN
+                            CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
+                        ENDIF
 #endif
                     ENDIF
 
@@ -10339,6 +10341,8 @@
                        ENDIF 
 #ifdef CMPI                       
                        CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
+                       CALL MPI_BCAST(RecordsList,NumContourfiles,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
+                       
                        DO I=1,NumContourFiles
                            CALL MPI_BCAST(ContourFileList(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
                            CALL MPI_BCAST(ContourFileTag(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
@@ -10366,6 +10370,11 @@
                       ENDIF
 
                       CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
+                     
+                      IF(ALLOCATED(RecordsList))DEALLOCATE(RecordsList)
+                      ALLOCATE(RecordsList(1:NumContourFiles))
+                      
+                      CALL MPI_BCAST(RecordsList,NumContourfiles,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
                       ALLOCATE(ContourFileList(NumContourFiles))
                       ALLOCATE(ContourFileTag(NumContourFiles))
                       DO I=1,NumContourFiles
