@@ -1454,7 +1454,7 @@
             INTEGER             :: NumSubRecords = 1
             INTEGER             :: OptimizeContours = 0
             INTEGER,ALLOCATABLE :: RecordsList(:)
-            INTEGER             :: RemoveFiles = 0
+            INTEGER             :: RemoveFiles = 1
             INTEGER             :: Resolution
             INTEGER             :: SmallJPGWidth
             INTEGER             :: SplitBy
@@ -2353,7 +2353,8 @@
 
                         IF(OptimizeContours.EQ.0)THEN
 
-                            IF(ContourFileType.EQ."ADCIRC-OUTPUT")THEN
+                            IF((ContourFileType.EQ."ADCIRC-OUTPUT").OR.                                  &
+                               (ContourFileType.EQ."ADCIRC-OUTPUT-LIST"))THEN
                                 WRITE(UNIT=15,FMT='(A,2X,I3,2X,I3,2X,I3,2X,F16.8,2X,I3,2X,I3,2X,I3)')    &
                                                     "-50.000000000",                                     &
                                                     NINT(GMTColors(1)%Red1),                             &
