@@ -59,7 +59,7 @@ PARAMETERS FOR OVERALL PLOT(S):
 0.25                                               ! Annotate on the border at every xth degree.
 1                                                  ! Image trim flag: 0 to ignore, 1 to trim image close to plot.
 600                                                ! Resolution (dpi) of images.
-JPG                                                ! Raster file format(s): PNG, JPG, BMP, TIFF, EPS, PDF.
+JPG                                                ! Available Raster and Vector file format(s): PNG, JPG, BMP, TIFF, EPS, PDF, PS.
 0,75,2,20050828120000                              ! Flag for Google KMZ file, transparency (0-100) of images, number of layers, and time stamp of first record in 63 file for animation.
 0,0                                                ! Flag for georeferencing: (0 to ignore, 1 for images, 2 for zipped images), and lowermost layer (or 0 to optimize).
 1                                                  ! Number of records for which to produce images (or 0 for all).

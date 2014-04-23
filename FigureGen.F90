@@ -1383,6 +1383,7 @@
             CHARACTER(LEN=50)   :: ParticleXYZFile
             CHARACTER(LEN=50)   :: PlotLabel
             CHARACTER(LEN=50)   :: PlotLabelFile
+            CHARACTER(LEN=60)   :: PlotName
             CHARACTER(LEN=40)   :: SMSPalette
             CHARACTER(LEN=60)   :: TempLabelsFile
             CHARACTER(LEN=60)   :: TempMapFile1
@@ -1411,6 +1412,7 @@
             INTEGER             :: DoPDF
             INTEGER             :: DoPNG
             INTEGER             :: DoTIFF
+            INTEGER             :: DoPS
             INTEGER             :: FindContourRange
             INTEGER             :: FindVectorScale
             INTEGER             :: GoogleDay
@@ -5952,6 +5954,7 @@
                     DoBMP = 0
                     DoEPS = 0
                     DoTIFF = 0
+                    DoPS = 1
                 ELSE
                     DoJPG = 0
                     DoPNG = 0
@@ -5959,6 +5962,7 @@
                     DoBMP = 0
                     DoEPS = 0
                     DoTIFF = 0
+                    DoPS = 0
                     READ(UNIT=11,FMT='(A50)') TempC
                     P = 1
                     typesearch_outer: DO
@@ -5979,6 +5983,8 @@
                                         DoEPS = 1
                                     ELSEIF(TRIM(TempC2).EQ."TIFF")THEN
                                         DoTIFF = 1
+                                    ELSEIF(TRIM(TempC2).EQ."PS")THEN
+                                        DoPS = 1
                                     ELSE
                                         WRITE(*,'(A,A,A)') 'WARNING: Raster file format "',TRIM(TempC2),'" not recognized.'
                                     ENDIF
@@ -6001,6 +6007,8 @@
                                 DoEPS = 1
                             ELSEIF(TRIM(TempC).EQ."TIFF")THEN
                                 DoTIFF = 1
+                            ELSEIF(TRIM(TempC2).EQ."PS")THEN
+                                DoPS = 1
                             ELSE
                                 WRITE(*,'(A,A,A)') 'WARNING: Raster file format "',TRIM(TempC),'" not recognized.'
                             ENDIF
@@ -6008,7 +6016,7 @@
                         ENDIF
                     ENDDO typesearch_outer
                     IF((DoJPG.EQ.0).AND.(DoPNG.EQ.0).AND.(DoPDF.EQ.0).AND. &
-                       (DoEPS.EQ.0).AND.(DoBMP.EQ.0).AND.(DoTIFF.EQ.0))THEN
+                       (DoEPS.EQ.0).AND.(DoBMP.EQ.0).AND.(DoTIFF.EQ.0).AND.(DoPS.EQ.0))THEN
                             DoJPG = 1
                     ENDIF
                 ENDIF
@@ -6581,7 +6589,6 @@
                 CHARACTER(LEN=500):: Line
                 CHARACTER(LEN=50) :: MemLimitLine
                 CHARACTER(LEN=8)  :: MinDistC
-                CHARACTER(LEN=60) :: PlotName
                 CHARACTER(LEN=15) :: PlotLabelXAdjustC
                 CHARACTER(LEN=15) :: PlotLabelYAdjustC
                 CHARACTER(LEN=50) :: ProjectionC
@@ -9953,6 +9960,11 @@
                             OPEN(UNIT=18,FILE=TRIM(TempPath)//TRIM(VectorVFile)//".grd",ACTION="WRITE")
                             CLOSE(UNIT=18,STATUS="DELETE")
 
+                        ENDIF
+
+                        IF(DoPS.EQ.0)THEN
+                            OPEN(UNIT=20,FILE=TRIM(PlotName)//".ps",ACTION="WRITE")
+                            CLOSE(UNIT=20,STATUS="DELETE")
                         ENDIF
 
                     ENDIF
