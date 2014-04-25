@@ -1,4 +1,31 @@
 !----------------------------------------------------------------------!
+!
+!                            FIGUREGEN
+!                       By: Casey Dietrich
+!                      SVN Revision: $Rev$
+!
+!  FigureGen is a Fortran program that creates images for ADCIRC files. 
+!  It reads mesh files (fort.14, etc.), nodal attributes files
+!  (fort.13, etc.) and output files (fort.63, fort.64, maxele.63, etc.). 
+!  It plots contours, contour lines, and vectors. Using FigureGen, you 
+!  can go directly from the ADCIRC input and output files to a 
+!  presentation-quality figure, for one or multiple time snaps.
+!
+!  This program started from a script written by Brian Blanton, 
+!  and I converted it to Fortran because I am more familiar with that 
+!  language. It now contains code written by John Atkinson, Zach Cobell, 
+!  Howard Lander, Chris Szpilka, Matthieu Vitse, Matthew Bilskie, and others.  
+!  But, at its core, FigureGen behaves like a script, and it uses system 
+!  calls to tell other software how to generate the figure(s).
+!
+! Specific Version Information Follows:
+!    Last Revision Author: $Author$
+!    Last Revision Date: $LastChangedDate$
+!    Current Revision Number: $Rev$
+!
+!----------------------------------------------------------------------!
+
+!----------------------------------------------------------------------!
 !    KDTREE2 is (c) Matthew Kennel, Institute for Nonlinear Science (2004)
 !    Licensed under the Academic Free License version 1.1
 !----------------------------------------------------------------------!
