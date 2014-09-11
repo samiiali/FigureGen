@@ -2475,10 +2475,15 @@
                     IF(FoundF)THEN
                         WRITE(UNIT=15,FMT='(A)') TRIM(LineF)
                     ELSE
+#ifdef CBARLIMIT
+                        WRITE(UNIT=15,FMT='(A)') "F  160   82   45"
+                        WRITE(*,*) "F  160   82   45"
+#else
                         WRITE(UNIT=15,FMT='(A,I3,A,I3,A,I3)') "F  ",                       &
                                                 NINT(GMTColors(NumGMTColors)%Red2),"  ",   &
                                                 NINT(GMTColors(NumGMTColors)%Green2),"  ", &
                                                 NINT(GMTColors(NumGMTColors)%Blue2)
+#endif
                     ENDIF
                     
                     IF(IfPlotBackgroundImages.EQ.2)THEN
@@ -7246,7 +7251,11 @@
                    UseParticlePalette.EQV..FALSE.)THEN
 
                     Line = ""
+#ifdef CBARLIMIT
+                    Line = TRIM(Line)//TRIM(Path)//"psscale -E"
+#else
                     Line = TRIM(Line)//TRIM(Path)//"psscale"
+#endif
                     Line = TRIM(Line)//" "//"-D"//TRIM(ADJUSTL(SideBarXC))//"i/"//TRIM(ADJUSTL(ContourScaleYC))//"i/" &
                                      //TRIM(ADJUSTL(ScaleHeightC))//"i/"//TRIM(ADJUSTL(ScaleWidthC))//"i"
                     Line = TRIM(Line)//" "//"-C"//TRIM(TempPath)//"ScalePalette.cpt"
