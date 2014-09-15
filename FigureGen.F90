@@ -1387,6 +1387,7 @@
             CHARACTER(LEN=40)   :: DiffContoursFile
             CHARACTER(LEN=50)   :: DotsLinesColor
             CHARACTER(LEN=50)   :: DotsLinesFile
+            CHARACTER(LEN=50)   :: DotsLinesThickness
             CHARACTER(LEN=40)   :: Fort14File
             CHARACTER(LEN=40)   :: Fort14File2
             CHARACTER(LEN=50)   :: GridFileFormat
@@ -5836,12 +5837,24 @@
                         ELSEIF(TempC(1:1).EQ."3")THEN
                             IfPlotDotsLines = 3
                         ENDIF
-                        DO I=3,LEN_TRIM(TempC)
+                        lines1: DO I=3,LEN_TRIM(TempC)
                             IF(TempC(I:I).EQ.",")THEN
                                 DotsLinesColor = TempC(3:I-1)
+                            EXIT lines1
                             ENDIF
-                        ENDDO
-                        DotsLinesFile = TempC(4+LEN_TRIM(DotsLinesColor):LEN_TRIM(TempC))
+                        ENDDO lines1
+                        TempC = TempC(3+LEN_TRIM(DotsLinesColor):LEN_TRIM(TempC))
+                        lines2: DO I = 2, LEN_TRIM(TempC)
+                            IF(TempC(I:I).EQ.",")THEN
+                                DotsLinesFile=TempC(2:I-1)
+                            EXIT lines2
+                            ENDIF
+                        ENDDO lines2
+                        IF(IfPlotDotsLines.GE.2)THEN
+                            DotsLinesThickness=TempC(3+LEN_TRIM(DotsLinesFile):LEN_TRIM(TempC))
+                        ELSE
+                            DotsLinesThickness="1"
+                        ENDIF
                         INQUIRE(FILE=TRIM(DotsLinesFile),EXIST=FileExists)
                         IF(.NOT.FileExists)THEN
                             IF(MyRank.EQ.0)THEN
@@ -7457,9 +7470,9 @@
                         Line = TRIM(Line)//" "//"-G"//TRIM(DotsLinesColor)
                         Line = TRIM(Line)//" "//"-Sc2p"
                     ELSEIF(IfPlotDotsLines.EQ.2)THEN
-                        Line = TRIM(Line)//" "//"-Wthick,"//TRIM(DotsLinesColor)
+                        Line = TRIM(Line)//" "//"-W"//TRIM(DotsLinesThickness)//"p/"//TRIM(DotsLinesColor)
                     ELSEIF(IfPlotDotsLines.EQ.3)THEN
-                        Line = TRIM(Line)//" "//"-Wthick,"//TRIM(DotsLinesColor)
+                        Line = TRIM(Line)//" "//"-W"//TRIM(DotsLinesThickness)//"p/"//TRIM(DotsLinesColor)
                         Line = TRIM(Line)//" "//"-m'>'"
                     ENDIF
                     Line = TRIM(Line)//" "//"-O"
@@ -9131,7 +9144,7 @@
                                     IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).GT.-90000D0))THEN
                                         Z(I) = BathLocal(I) - Vels2(TranslationTable(XYZNodes(I)))
                                     ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
-                                        Z(I) = BathLocal(I) - Vels1(XYZNodes(I)) 
+                                        Z(I) = Vels1(XYZNodes(I)) - BathLocal(I) 
                                     ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
                                         Z(I) = 0.0d0
                                     ELSE

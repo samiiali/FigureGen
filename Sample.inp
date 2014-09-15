@@ -49,7 +49,7 @@ ft/s                                               ! Alphanumeric label for unit
 PARAMETERS FOR OVERALL PLOT(S):
 1,Tan                                              ! Boundaries flag: 0 to ignore, 1 to plot roads/levees from grid.
 1,White,4,4,1                                      ! Coastline flag: 0 to ignore, 1 to plot coastline with color, resolution (1[Least]-4[Most]), water bodies (1[Least]-4[Most]), Coastline Thickness.
-0,Black,KatrinaTrack.txt                           ! Dots/lines flag: 0 to ignore, 1 to plot unconnected dots, 2 to plot connected line segments from an external file.
+0,Black,KatrinaTrack.txt,1                         ! Dots/lines flag: 0 to ignore, 1 to plot unconnected dots, 2 to plot connected line segments from an external file, Line Thickness.
 0,Labels.txt                                       ! Labels flag: 0 to ignore, 1 to plot labels from external file.
 0,TL,2.0,CHG.eps                                   ! Logo flag: 0 to ignore, 1 to plot logo at position (TL,TR,BL,BR) and width (inches) from an external file.
 0,SatelliteImages.txt                              ! Background images: 0 to ignore, 1 to plot geo-referenced images from a list in an external file.
