@@ -1497,6 +1497,7 @@
 
             LOGICAL             :: NeedTranslationTable
             LOGICAL             :: OutputFileList
+            LOGICAL             :: PlotVectorScale
             LOGICAL             :: UseParticlePalette
             LOGICAL,ALLOCATABLE :: BdyNodes(:)
 
@@ -1513,6 +1514,7 @@
             REAL                :: ContourMax
             REAL                :: ContourMin
             REAL(8)             :: CurrentTime
+            REAL(8)             :: DEG2RAD
             REAL                :: LatLonBuffer = 0.25 
             REAL                :: LatN
             REAL                :: LatS
@@ -1602,17 +1604,20 @@
                 
     !...This is a subroutine that simply examines the NetCDF file and determines if it
     !   contains any data we can plot
-            SUBROUTINE FindMyNetCDFVariable(NCID,Vector)
+            SUBROUTINE FindMyNetCDFVariable(NCID,Vector,NumCols)
                 USE netcdf
                 IMPLICIT NONE
-                INTEGER,INTENT(IN) :: NCID
-                LOGICAL,INTENT(IN),OPTIONAL :: Vector
+                INTEGER,INTENT(IN)           :: NCID
+                LOGICAL,INTENT(IN),OPTIONAL  :: Vector
+                INTEGER,INTENT(OUT),OPTIONAL :: NumCols
                 INTEGER :: I
                 INTEGER :: J
                 INTEGER :: NVAR
                 CHARACTER(200) :: NC_NAME
 
                 CALL CHECK(NF90_INQUIRE(NCID,NVARIABLES=NVAR))
+
+                IF(PRESENT(NumCols))NumCols = 1
         
                 DO I = 1,NVAR
                     CALL CHECK(NF90_INQUIRE_VARIABLE(NCID,I,NAME=NC_NAME))
@@ -1623,6 +1628,10 @@
                             IF(Vector)THEN
                                 SELECT CASE(J)
                                     CASE(13,14,18,19,21,22,33,34)
+                                        NumCols = 2
+                                        RETURN
+                                    CASE(26,27)
+                                        IF(PRESENT(NumCols))NumCols = 1
                                         RETURN
                                     CASE DEFAULT
                                         CONTINUE
@@ -4722,6 +4731,7 @@
 
                         IF((LandBoundaries(J)%Code.EQ. 0).OR. &
                            (LandBoundaries(J)%Code.EQ. 1).OR. &
+                           (LandBoundaries(J)%Code.EQ. 2).OR. &
                            (LandBoundaries(J)%Code.EQ.10).OR. &
                            (LandBoundaries(J)%Code.EQ.11).OR. &
                            (LandBoundaries(J)%Code.EQ.12).OR. &
@@ -5615,6 +5625,7 @@
                 READ(UNIT=11,FMT=*)       IfPlotVectors
                 READ(UNIT=11,FMT='(A40)') VectorFile
                 IF(IfPlotVectors.EQ.1)THEN
+                    PlotVectorScale = .TRUE.
                     INQUIRE(FILE=TRIM(VectorFile),EXIST=FileExists)
                     IF(.NOT.FileExists)THEN
                         IF(MyRank.EQ.0)THEN
@@ -6805,6 +6816,7 @@
                 ELSE
                     ScaleHeight = Height - 1.6 - SideBarTriangleHeight
                 ENDIF
+                IF(.NOT.PlotVectorScale)ScaleHeight = ScaleHeight + 0.4d0
                 WRITE(UNIT=ScaleHeightC,FMT=1236) ScaleHeight
 
                 WRITE(UNIT=BorderIncrementMajorC,FMT=1236) BorderIncrementMajor
@@ -7773,7 +7785,11 @@
                     ENDIF
                     Line = TRIM(Line)//" "//"-S"//TRIM(ADJUSTL(VectorMagC))//"i"
                     IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0))THEN
-                       Line = TRIM(Line)//" "//"-K"
+                       IF(KeepOpen(13).EQ.0.AND.KeepOpen(14).EQ.0.AND..NOT.PlotVectorScale)THEN
+                          !...Nothing
+                       ELSE
+                           Line = TRIM(Line)//" "//"-K"
+                       ENDIF
                     ELSEIF(KeepOpen(12).EQ.1)THEN
                        Line = TRIM(Line)//" "//"-K"
                     ENDIF
@@ -7786,7 +7802,7 @@
                     Line = TRIM(Line)//" "//TRIM(PlotName)//".ps"
                     CALL SYSTEM(TRIM(Line))
 
-                    IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0))THEN
+                    IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0).AND.PlotVectorScale)THEN
 
                         WRITE(UNIT=VectorScaleFile,FMT='(A,I4.4,A)') "vectorscale.",Record,".txt"
 
@@ -9741,6 +9757,10 @@
                             OPEN(UNIT=20,FILE=TRIM(VectorFile),ACTION="READ")
                             READ(UNIT=20,FMT='(A)') JunkC
                             READ(UNIT=20,FMT=*) NumRecs, JunkI, JunkR, JunkI, VectorFileNumCols
+                            CurrentRecord = 1
+                            IF(VectorFileNumCols.EQ.1)THEN
+                                PlotVectorScale = .FALSE.
+                            ENDIF
                         ENDIF
                     ELSEIF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
@@ -9750,8 +9770,7 @@
                         CALL Check(NF90_INQUIRE_DIMENSION(NC_ID1,NC_DimIDs(1),len=NumRecs))
                         CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/Record/),count=(/1/)))
                         CurrentTime = NC_Time(1)
-                        CALL FindMyNETCDFVariable(NC_ID1,VECTOR=.TRUE.)
-                        VectorFileNumCols = 2
+                        CALL FindMyNETCDFVariable(NC_ID1,VECTOR=.TRUE.,NumCols=VectorFileNumCols)
                         VectorFileIsContourFile = 0
 #endif
                     ENDIF
@@ -9759,6 +9778,7 @@
                     IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
                         IF(VectorFileIsContourFile.EQ.0)THEN
                             IF(CurrentRecord.LT.Record)THEN
+                                WRITE(*,*) CurrentRecord,Record
                                 DO J=CurrentRecord,Record-1
                                     NumNodes1 = NumNodesGlobal
                                     CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),CurrentTime,JunkR,NumNodes1,DefaultValue)
@@ -9785,6 +9805,9 @@
 #ifdef NETCDF
                         NumNodes1 = NumNodesGlobal
                         CALL GetNETCDFVarID(NC_ID1,NC_Var,NC_Var2,VectorFileNumCols)
+                        IF(VectorFileNumCols.EQ.1)THEN
+                            PlotVectorScale = .FALSE.
+                        ENDIF
 
                         ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
                         IF(ierr.NE.NF90_NOERR)THEN
@@ -9820,7 +9843,22 @@
 
                     IF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
-                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
+                        IF(VectorFileNumCols.EQ.1)THEN
+                            CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=Record)
+                            DO I = 1,NumNodes1
+                                !...Lets assume this is a direction, and
+                                !   split into components of a unit vector
+                                IF(U1(I).GT.-99990D0.AND.U1(I).NE.0D0)THEN
+                                    V1(I) = SIN(U1(I)*DEG2RAD)
+                                    U1(I) = COS(U1(I)*DEG2RAD)
+                                ELSE
+                                    U1(I) = 0D0
+                                    V1(I) = 0D0
+                                ENDIF
+                            ENDDO
+                        ELSE
+                            CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
+                        ENDIF
 #endif
                     ENDIF
 
@@ -9828,12 +9866,35 @@
                         DO I=1,NumNodes1
                             IF(VectorFileIsContourFile.EQ.0)THEN
 #ifdef SLOWREAD
-                                CALL ReadNodeVals(20,LEN_TRIM(VectorFile),TRIM(VectorFile),2,JunkI,JunkR1,JunkR2)
+                                IF(VectorFileNumCols.EQ.1)THEN
+                                    CALL ReadNodeVals(20,LEN_TRIM(VectorFile),TRIM(VectorFile),1,JunkI,JunkR1,JunkR2)
+                                ELSE
+                                    CALL ReadNodeVals(20,LEN_TRIM(VectorFile),TRIM(VectorFile),2,JunkI,JunkR1,JunkR2)
+                                ENDIF
 #else
-                                READ(20,*) JunkI,JunkR1,JunkR2
+                                IF(VectorFileNumCols.EQ.1)THEN
+                                    READ(20,*) JunkI,JunkR1
+                                ELSE
+                                    READ(20,*) JunkI,JunkR1,JunkR2
+                                ENDIF
 #endif
-                                U1(JunkI) = JunkR1
-                                V1(JunkI) = JunkR2
+                                IF(VectorFileNumCols.EQ.1)THEN
+                                    !...Lets assume this is a direction, and
+                                    !   split into components of a unit vector
+                                    !   If it isn't a direction, the user made
+                                    !   a boo-boo, and shall pay with an ugly 
+                                    !   plot.
+                                    IF(JunkR1.GT.-99990.AND.JunkR1.NE.0D0)THEN
+                                        U1(JunkI) = COS(JunkR1*(DEG2RAD))
+                                        V1(JunkI) = SIN(JunkR1*(DEG2RAD))
+                                    ELSE
+                                        U1(JunkI) = 0D0
+                                        V1(JunkI) = 0D0
+                                    ENDIF
+                                ELSE
+                                    U1(JunkI) = JunkR1
+                                    V1(JunkI) = JunkR2
+                                ENDIF
                             ELSEIF(VectorFileIsContourFile.EQ.1)THEN
                                 CONTINUE
                             ELSEIF(VectorFileIsContourFile.EQ.2)THEN
@@ -10301,6 +10362,7 @@
                 REAL                :: N
                 REAL                :: Target = 0.5d0
 
+                DEG2RAD = 4D0*ATAN(1D0)/180D0 !...PI/180
 #ifdef CMPI
                 CALL MPI_INIT(IERR)
                 CALL MPI_COMM_RANK(MPI_COMM_WORLD, MyRank, IERR)
@@ -10535,10 +10597,10 @@
                                 CALL Check(NF90_INQ_VARID(NC_ID,'time',NC_Var))
                                 CALL Check(NF90_INQUIRE_VARIABLE(NC_ID,NC_Var,dimids=NC_DimIDs))
                                 CALL Check(NF90_INQUIRE_DIMENSION(NC_ID,NC_DimIDs(1),len=NumRecs))
-                                CALL Check(NF90_GET_VAR(NC_ID,NC_Var,JunkTime,start=(/1/),count=(/2/)))
-                                IF(IfGoogle.EQ.1)THEN
-                                    TimeStep = NINT(JunkTime(2)-JunkTime(1))
-                                ENDIF
+                                !CALL Check(NF90_GET_VAR(NC_ID,NC_Var,JunkTime,start=(/1/),count=(/2/)))
+                                !IF(IfGoogle.EQ.1)THEN
+                                !    TimeStep = NINT(JunkTime(2)-JunkTime(1))
+                                !ENDIF
                                 CALL Check(NF90_CLOSE(NC_ID))
 #endif
                             ENDIF
