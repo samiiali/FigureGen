@@ -1526,6 +1526,8 @@
             REAL                :: ScaleWidth
             REAL                :: StartTime
             REAL                :: TotalSimTime
+            REAL                :: TotalSimTime1
+            REAL                :: TotalSimTime2
             REAL                :: VectorConversionFactor
             REAL                :: VectorMag
             REAL                :: VectorHeadLength
@@ -8370,11 +8372,13 @@
                                 !...Grab the start and end times as well
                                 CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/1/),count=(/1/)))
                                 StartTime = NC_Time(1)
-                                iret = NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'rnday',TotalSimTime)
+                                iret = NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'rnday',TotalSimTime1)
                                 IF(iret.NE.NF90_NOERR)THEN
-                                    TotalSimTime = -1D0
+                                    TotalSimTime1 = -1D0
                                 ENDIF
-
+                                CALL CHECK(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/NumRecs/),count=(/1/)))
+                                TotalSimTime2 = NC_Time(1)/86400D0
+                                TotalSimTime = MAX(TotalSimTime1,TotalSimTime2)
 
                                 CALL FindMyNETCDFVariable(NC_ID1)
 #endif
@@ -8917,10 +8921,13 @@
                                 !...Grab the start and end times as well
                                 CALL Check(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/1/),count=(/1/)))
                                 StartTime = NC_Time(1)
-                                iret = NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'rnday',TotalSimTime)
+                                iret = NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'rnday',TotalSimTime1)
                                 IF(iret.NE.NF90_NOERR)THEN
-                                    TotalSimTime = -1D0
+                                    TotalSimTime1 = -1D0
                                 ENDIF
+                                CALL CHECK(NF90_GET_VAR(NC_ID1,NC_Var,NC_Time,start=(/NumRecs/),count=(/1/)))
+                                TotalSimTime2 = NC_Time(1)/86400D0
+                                TotalSimTime = MAX(TotalSimTime1,TotalSimTime2)
                                 CALL FindMyNETCDFVariable(NC_ID1)
 #endif
                             ENDIF
