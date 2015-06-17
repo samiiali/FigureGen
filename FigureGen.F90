@@ -73,7 +73,7 @@
 
           NALLOC = SIZE(RESULTS_IN,1)
           IF (NALLOC .LT. 1) THEN
-             WRITE (*,*) 'PQ_CREATE: ERROR, INPUT ARRAYS MUST BE '&
+             WRITE (*,*) 'PQ_CREATE: ERROR, INPUT ARRAYS MUST BE '// &
                 'ALLOCATED.'
           END IF
           RES%ELEMS => RESULTS_IN
@@ -1361,8 +1361,8 @@
                 INTEGER :: MINUTE=0
                 INTEGER :: SECOND=0
             END TYPE
-            TYPE(DATEVAR)       :: ColdStartDate
-            TYPE(DATEVAR)       :: ResultDate
+            TYPE(DATEVAR),SAVE  :: ColdStartDate
+            TYPE(DATEVAR),SAVE  :: ResultDate
 
             CHARACTER(LEN=50)   :: AlphaLabel
             CHARACTER(LEN=50)   :: BackgroundImagesFile
@@ -2613,7 +2613,8 @@
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN 
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
+                                                       NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
                                         READ(UNIT=19,FMT=*) JunkI
                                     ENDDO
@@ -2625,7 +2626,8 @@
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
+                                                       NumNodes1,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     NumNodes1 = NumNodesGlobal
@@ -2656,9 +2658,11 @@
                                 IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     IF(ContourFileNumCols.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,VARID1=NC_Var,VEC1=U1)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,&
+                                                                  VARID1=NC_Var,VEC1=U1)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,VARID1=NC_VAR,VEC1=U1,VARID2=NC_VAR2,VEC2=V1)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,&
+                                                                  VARID1=NC_VAR,VEC1=U1,VARID2=NC_VAR2,VEC2=V1)
                                     ENDIF    
 #endif
                                 ENDIF
@@ -2965,14 +2969,16 @@
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
+                                                       NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
                                        READ(UNIT=19,FMT=*) JunkI
                                     ENDDO
                                 ENDIF
                                 IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
                                     NumNodes2 = NumNodesMesh2
-                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,NumNodes2,DefaultValue)
+                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,&
+                                                       NumNodes2,DefaultValue)
                                     DO I=1,NumNodes2
                                        READ(UNIT=23,FMT=*) JunkI
                                     ENDDO
@@ -2984,7 +2990,8 @@
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
+                                                       NumNodes1,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     NumNodes1 = NumNodesGlobal
@@ -2999,7 +3006,8 @@
                                 ENDIF
                                 IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
                                     NumNodes2 = NumNodesMesh2
-                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,NumNodes2,DefaultValue)
+                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,&
+                                                       NumNodes2,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     NumNodes2 = NumNodesGlobal
@@ -3030,9 +3038,11 @@
                                 IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     IF(ContourFileNumCOls.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,Record=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
+                                                                  VEC1=U1,Record=J)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,VARID2=NC_VAR2,VEC2=V1,Record=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
+                                                                  VEC1=U1,VARID2=NC_VAR2,VEC2=V1,Record=J)
                                     ENDIF    
 #endif
                                 ENDIF
@@ -3079,9 +3089,11 @@
 #ifdef NETCDF
                                     CALL GetNetCDFVARID(NC_ID2,NC_Var,NC_Var2,ContourFileNumCols)
                                     IF(ContourFileNumCOls.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var,VEC1=U2,RECORD=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var,&
+                                                                  VEC1=U2,RECORD=J)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var,NUMNODES=NumNodesMesh2,VEC1=U2,VARID2=NC_VAR2,VEC2=V2,Record=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var,NUMNODES=NumNodesMesh2,&
+                                                                  VEC1=U2,VARID2=NC_VAR2,VEC2=V2,Record=J)
                                     ENDIF    
 #endif
                                 ENDIF
@@ -3350,7 +3362,8 @@
 
                         IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
                             NumNodes1 = NumNodesGlobal
-                            CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),JunkR,JunkR2,NumNodes1,DefaultValue)
+                            CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),JunkR,JunkR2,&
+                                               NumNodes1,DefaultValue)
                             DO I=1,NumNodes1
                                 READ(UNIT=20,FMT=*) JunkI
                             ENDDO
@@ -3392,7 +3405,8 @@
 
                         IF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
-                            CALL ReadMyNetCDFVariable(NCID=NC_ID,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=J)
+                            CALL ReadMyNetCDFVariable(NCID=NC_ID,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
+                                                      VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=J)
 #endif
                         ENDIF
 
@@ -3528,7 +3542,8 @@
 
               OPEN(UNIT=35,FILE=TRIM(GoogleLabel)//".kml",ACTION="WRITE")
 
-              WRITE(UNIT=35,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//ACHAR(34)//"UTF-8"//ACHAR(34)//"?>"
+              WRITE(UNIT=35,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//ACHAR(34)//&
+                                            "UTF-8"//ACHAR(34)//"?>"
               WRITE(UNIT=35,FMT='(A)') "<kml xmlns="//ACHAR(34)//"http://earth.google.com/kml/2.1"//ACHAR(34)//">"
               WRITE(UNIT=35,FMT='(A)') "   <Document>"
               WRITE(UNIT=35,FMT='(A)') "      <Name>"//TRIM(GoogleLabel)//"</Name>"
@@ -3885,7 +3900,8 @@
 
                  OPEN(UNIT=36,FILE=TRIM(GoogleLabel)//".kml",ACTION="WRITE")
 
-                 WRITE(UNIT=36,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//ACHAR(34)//"UTF-8"//ACHAR(34)//"?>"
+                 WRITE(UNIT=36,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//&
+                                                ACHAR(34)//"UTF-8"//ACHAR(34)//"?>"
                  WRITE(UNIT=36,FMT='(A)') "<kml xmlns="//ACHAR(34)//"http://earth.google.com/kml/2.1"//ACHAR(34)//">"
                  WRITE(UNIT=36,FMT='(A)') "   <Document>"
                  WRITE(UNIT=36,FMT='(A)') "      <Name>"//TRIM(GoogleLabel)//"</Name>"
@@ -3895,7 +3911,8 @@
                     WRITE(UNIT=36,FMT='(A)')        "      <NetworkLink>"
                     WRITE(UNIT=36,FMT='(A,I4.4,A)') "         <Name>"//TRIM(GoogleLabel)//"_",RecordsList(IR),"</Name>"
                     WRITE(UNIT=36,FMT='(A)')        "         <Link>"
-                    WRITE(UNIT=36,FMT='(A,I4.4,A)') "            <href>"//TRIM(GoogleLabel)//"_",RecordsList(IR),"-01-01-01.kml"//"</href>"
+                    WRITE(UNIT=36,FMT='(A,I4.4,A)') "            <href>"//TRIM(GoogleLabel)//"_",RecordsList(IR),&
+                                                                    "-01-01-01.kml"//"</href>"
                     WRITE(UNIT=36,FMT='(A)')        "         </Link>"
                     WRITE(UNIT=36,FMT='(A)')        "      </NetworkLink>"
 
@@ -5125,7 +5142,8 @@
                 IF(IfPlotFilledContours.LE.1)THEN
                     IF(INDEX(TempC,",").GT.0)THEN
                         IF(MyRank.EQ.0)THEN
-                            WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: IfPlotFilledContours = 0 or 1, then list only one contour file name."
+                            WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: IfPlotFilledContours = 0 or 1, then "//&
+                                        "list only one contour file name."
                         ENDIF
                     
                     
@@ -8388,11 +8406,12 @@
                                 IF(CurrentRecord.LT.LocalRecord)THEN
                                     DO J=CurrentRecord,LocalRecord-1
                                         NumNodes1 = NumNodesGlobal
-                                        CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),CurrentTime,JunkR, &
-                                                           NumNodes1,DefaultValue)
+                                        CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),&
+                                                           CurrentTime,JunkR,NumNodes1,DefaultValue)
                                         DO I=1,NumNodes1
 #ifdef SLOWREAD
-                                            CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),0,JunkI,JunkR1,JunkR2)
+                                            CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),0,&
+                                                              JunkI,JunkR1,JunkR2)
 #else
                                             READ(19,*)
 #endif
@@ -8446,9 +8465,11 @@
 #ifdef NETCDF
                                 
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=LocalRecord)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
+                                                              VEC1=U1,RECORD=LocalRecord)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=LocalRecord)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
+                                                              VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=LocalRecord)
                                 ENDIF
 #endif
                             ENDIF
@@ -8459,7 +8480,8 @@
                                     
                                     IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
 #ifdef SLOWREAD
-                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),1,JunkI,JunkR1,JunkR2)
+                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),1,JunkI,&
+                                                          JunkR1,JunkR2)
 #else
                                         READ(19,*) JunkI,JunkR1
 #endif
@@ -8481,7 +8503,8 @@
 
                                     IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN 
 #ifdef SLOWREAD
-                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),2,JunkI,JunkR1,JunkR2)
+                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),2,JunkI,&
+                                                          JunkR1,JunkR2)
 #else
                                         READ(19,*) JunkI,JunkR1,JunkR2
 #endif
@@ -8680,7 +8703,8 @@
 
 
                             DO I = 1,SIZE(OWI_XYZUV(:,1))
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,3)*ContourConversionFactor
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,3)*&
+                                                                   ContourConversionFactor
                             ENDDO
 
                             CLOSE(UNIT=12,STATUS="KEEP")
@@ -8734,7 +8758,8 @@
 
                                     AttributeDefault = AttrWR(Record)
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
@@ -8808,13 +8833,15 @@
 
                                     DO J=1,NumNonDefault
 
-                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), AttrWR(6), &
-                                                            AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), AttrWR(11), AttrWR(12)
+                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), &
+                                                            AttrWR(5), AttrWR(6), AttrWR(7), AttrWR(8), AttrWR(9), &
+                                                            AttrWR(10), AttrWR(11), AttrWR(12)
                                         Attributes1(JunkI) = AttrWR(Record)
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT=*) NumNonDefault
 
@@ -9300,7 +9327,8 @@
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT=*) AttributeDefault
 
-                                ELSEIF((INDEX(AttributeLabel,"canopy").GT.0).AND.(TRIM(ContourFileType).EQ."13-CANOPY"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"canopy").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-CANOPY"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
@@ -9317,13 +9345,15 @@
 
                                     AttributeDefault = AttrWR(Record)
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT=*) AttributeDefault
 
-                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.(TRIM(ContourFileType).EQ."13-EVIS"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-EVIS"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
@@ -9385,13 +9415,15 @@
 
                                     AttributeDefault = AttrWR(Record)
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
+                                        (TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT=*) AttributeDefault 
 
-                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.(TRIM(ContourFileType).EQ."13-EVIS"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-EVIS"))THEN
 
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT='(A)') JunkC
@@ -9459,13 +9491,15 @@
 
                                     DO J=1,NumNonDefault
 
-                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), AttrWR(6), &
-                                                            AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), AttrWR(11), AttrWR(12)
+                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), &
+                                                            AttrWR(6), AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), &
+                                                            AttrWR(11), AttrWR(12)
                                         Attributes1(JunkI) = AttrWR(Record)
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT=*) NumNonDefault
 
@@ -9476,7 +9510,8 @@
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.(TRIM(ContourFileType).EQ."13-EVIS"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-EVIS"))THEN
 
                                     READ(UNIT=19,FMT=*) NumNonDefault
 
@@ -9558,13 +9593,16 @@
 
                                     DO J=1,NumNonDefault
 
-                                        READ(UNIT=23,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), AttrWR(6), &
-                                                            AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), AttrWR(11), AttrWR(12)
+                                        READ(UNIT=23,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), &
+                                                            AttrWR(4), AttrWR(5), AttrWR(6), &
+                                                            AttrWR(7), AttrWR(8), AttrWR(9), &
+                                                            AttrWR(10), AttrWR(11), AttrWR(12)
                                         Attributes2(JunkI) = AttrWR(Record)
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
+                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=23,FMT=*) NumNonDefault
 
@@ -9626,7 +9664,8 @@
 
                             DO I=1,NumNodesLocal
 
-                                Z(I) = (Attributes1(XYZNodes(I))-Attributes2(TranslationTable(XYZNodes(I)))) * ContourConversionFactor
+                                Z(I) = (Attributes1(XYZNodes(I))-Attributes2(TranslationTable(XYZNodes(I)))) * &
+                                        ContourConversionFactor
 
                                 IF(OptimizeContours.EQ.1)THEN
                                    IF(BdyNodes(XYZNodes(I)))THEN
@@ -9788,7 +9827,8 @@
                                 WRITE(*,*) CurrentRecord,Record
                                 DO J=CurrentRecord,Record-1
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),CurrentTime,JunkR,NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),CurrentTime,JunkR,NumNodes1,&
+                                                        DefaultValue)
                                     DO I=1,NumNodes1
 #ifdef SLOWREAD
                                         CALL ReadNodeVals(20,LEN_TRIM(VectorFile),TRIM(VectorFile),0,JunkI,JunkR1,JunkR2)
@@ -9864,7 +9904,8 @@
                                 ENDIF
                             ENDDO
                         ELSE
-                            CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
+                            CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,&
+                                                      VEC1=U1,VEC2=V1,RECORD=Record)
                         ENDIF
 #endif
                     ENDIF
@@ -10919,7 +10960,8 @@
                                 ENDIF
                             ENDIF
 
-                            IF((IfPlotFilledContours.GT.0).OR.(IfPlotContourLines.GT.0).OR.(IfPlotParticles.GT.0).OR.(IfPlotVectors.GT.0))THEN
+                            IF((IfPlotFilledContours.GT.0).OR.(IfPlotContourLines.GT.0).OR.&
+                               (IfPlotParticles.GT.0).OR.(IfPlotVectors.GT.0))THEN
 
                                 WRITE(UNIT=RecordC,FMT='(I4.4)') Record
                                 TempC = TRIM(TempPath)//"XYZFileNames_"//TRIM(RecordC)//".tmp"
