@@ -9254,7 +9254,7 @@
                                     ELSE
                                         Z(I) = Vels1(XYZNodes(I)) - Vels2(TranslationTable(XYZNodes(I)))
                                     ENDIF
-#elif DRYDIFF
+#elif defined(DRYDIFF)
                                     IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
                                         Z(I) = -99999D0
                                     ELSE
