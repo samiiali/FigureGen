@@ -25,11 +25,25 @@
 !
 !----------------------------------------------------------------------!
 
+
+!----------------------------------------------------------------------!
+!...Use the configuration file to compile the code
+!   instead of using many options on the command line.
+!   compile with the option -DHAVE_CONFIG to enable this 
+!   feature. Make sure that the file "FigureGen_Options.h" 
+!   is either in the current directory, or its location is
+!   spcified using the -I/path/to/directory syntax.
+#ifdef HAVE_CONFIG
+    INCLUDE 'FigureGen_Options.h'
+#endif    
+!----------------------------------------------------------------------!
+
+
 !----------------------------------------------------------------------!
 !    KDTREE2 is (c) Matthew Kennel, Institute for Nonlinear Science (2004)
 !    Licensed under the Academic Free License version 1.1
 !----------------------------------------------------------------------!
-      MODULE KDTREE2_PRECISION_MODULE
+    MODULE KDTREE2_PRECISION_MODULE
           INTEGER, PARAMETER :: SP = KIND(0.0)
           INTEGER, PARAMETER :: DP = KIND(0.0D0)
 
@@ -2693,11 +2707,17 @@
                                             U1(JunkI) = U1(JunkI) * ContourConversionFactor
                                             V1(JunkI) = V1(JunkI) * ContourConversionFactor
                                             Vels1(JunkI) = SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
+#ifdef DRYZEROVEL                                            
+                                            IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
+#endif                                            
                                         ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                             U1(I) = U1(I) * ContourConversionFactor
                                             V1(I) = V1(I) * ContourConversionFactor
                                             Vels1(I) = SQRT(U1(I)*U1(I)+V1(I)*V1(I))
+#ifdef DRYZEROVEL                                            
+                                            IF(Vels1(I).EQ.0D0)Vels1(I)=-99999D0
+#endif                                            
 #endif
                                         ENDIF
 
@@ -3073,11 +3093,17 @@
                                             U1(JunkI) = U1(JunkI) * ContourConversionFactor
                                             V1(JunkI) = V1(JunkI) * ContourConversionFactor
                                             Vels1(JunkI) = SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
+#ifdef DRYZEROVEL                                            
+                                            IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
+#endif                                            
                                         ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                             U1(I) = U1(I) * ContourConversionFactor
                                             V1(I) = V1(I) * ContourConversionFactor
                                             Vels1(I) = SQRT(U1(I)*U1(I)+V1(I)*V1(I))
+#ifdef DRYZEROVEL                                            
+                                            IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
+#endif                                            
 #endif
                                         ENDIF
 
@@ -3124,11 +3150,17 @@
                                             U2(JunkI) = U2(JunkI) * ContourConversionFactor
                                             V2(JunkI) = V2(JunkI) * ContourConversionFactor
                                             Vels2(JunkI) = SQRT(U2(JunkI)*U2(JunkI)+V2(JunkI)*V2(JunkI))
+#ifdef DRYZEROVEL                                            
+                                            IF(Vels2(JunkI).EQ.0D0)Vels2(JunkI)=-99999D0
+#endif                                            
                                         ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
                                             U2(I) = U2(I) * ContourConversionFactor
                                             V2(I) = V2(I) * ContourConversionFactor
                                             Vels2(I) = SQRT(U2(I)*U2(I)+V2(I)*V2(I))
+#ifdef DRYZEROVEL                                            
+                                            IF(Vels2(JunkI).EQ.0D0)Vels2(JunkI)=-99999D0
+#endif                                            
 #endif
                                         ENDIF
 
@@ -8511,9 +8543,15 @@
                                         U1(JunkI) = JunkR1
                                         V1(JunkI) = JunkR2
                                         Vels1(JunkI) = ContourConversionFactor * SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
+#ifdef DRYZEROVEL                                            
+                                        IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
+#endif
                                     ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN 
 #ifdef NETCDF
                                         Vels1(I) = ContourConversionFactor * SQRT(U1(I)*U1(I)+V1(I)*V1(I))
+#ifdef DRYZEROVEL                                            
+                                        IF(Vels1(I).EQ.0D0)Vels1(I)=-99999D0
+#endif                                        
 #endif
                                     ENDIF
 
@@ -9132,9 +9170,15 @@
                                         U1(JunkI) = JunkR1
                                         V1(JunkI) = JunkR2
                                         Vels1(JunkI) = ContourConversionFactor * SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
+#ifdef DRYZEROVEL                                            
+                                        IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
+#endif                                        
                                     ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                         Vels1(I) = ContourConversionFactor * SQRT(U1(I)*U1(I)+V1(I)*V1(I))
+#ifdef DRYZEROVEL                                            
+                                        IF(Vels1(I).EQ.0D0)Vels1(I)=-99999D0
+#endif                                        
 #endif
                                     ENDIF
 
@@ -9177,9 +9221,15 @@
                                         U2(JunkI) = JunkR1
                                         V2(JunkI) = JunkR2
                                         Vels2(JunkI) = ContourConversionFactor * SQRT(U2(JunkI)*U2(JunkI)+V2(JunkI)*V2(JunkI))
+#ifdef DRYZEROVEL                                            
+                                        IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
+#endif                                        
                                     ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN 
 #ifdef NETCDF
                                         Vels2(I) = ContourConversionFactor * SQRT(U2(I)*U2(I)+V2(I)*V2(I))
+#ifdef DRYZEROVEL                                            
+                                        IF(Vels2(I).EQ.0D0)Vels2(I)=-99999D0
+#endif                                        
 #endif
                                     ENDIF
 
