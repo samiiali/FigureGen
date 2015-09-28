@@ -34,7 +34,7 @@
 !   is either in the current directory, or its location is
 !   spcified using the -I/path/to/directory syntax.
 #ifdef HAVE_CONFIG
-    INCLUDE 'FigureGen_Options.h'
+#include 'FigureGen_Options.h'
 #endif    
 !----------------------------------------------------------------------!
 
