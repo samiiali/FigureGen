@@ -9246,7 +9246,17 @@
                                     ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
                                         Z(I) = Vels1(XYZNodes(I)) - BathLocal(I) 
                                     ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
+#ifdef DRYDIFF
+                                        Z(I) = -99999D0
+#else                                    
                                         Z(I) = 0.0d0
+#endif
+                                    ELSE
+                                        Z(I) = Vels1(XYZNodes(I)) - Vels2(TranslationTable(XYZNodes(I)))
+                                    ENDIF
+#elif DRYDIFF
+                                    IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
+                                        Z(I) = -99999D0
                                     ELSE
                                         Z(I) = Vels1(XYZNodes(I)) - Vels2(TranslationTable(XYZNodes(I)))
                                     ENDIF

@@ -79,6 +79,15 @@
 !
 !
 !------------------------------------------------------------------!
+! D R Y  D I F F E R E N C E S
+!...When differencing a set of files, two dry values will normally
+!   not be recognized and treated in a special way, and the
+!   difference will show as a zero value. This option will plot
+!   two identical values of "dry" as the "dry" color in the plot
+!#define DRYDIFF
+!
+!------------------------------------------------------------------!
+!------------------------------------------------------------------!
 ! D R Y  V E L O C I T Y  V A L U E S
 !...Consider a velocity of zero to be a dry value. ADCIRC
 !   does not write dry values in velocity files, so for 
