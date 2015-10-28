@@ -3850,7 +3850,8 @@
                  DO ILL2=1,2
                     DO ILL3=1,2
 
-                       WRITE(UNIT=TempLabel,FMT=9722) TRIM(AlphaLabel),WorkingRecord,"-",IL1+1,"-",(IL2-1)*2+ILL2,"-",(IL3-1)*2+ILL3
+                       WRITE(UNIT=TempLabel,FMT=9722) TRIM(AlphaLabel),WorkingRecord,"-",IL1+1,"-",&
+                                                      (IL2-1)*2+ILL2,"-",(IL3-1)*2+ILL3
  9722                  FORMAT(A,I4.4,A,I2.2,A,I2.2,A,I2.2)
 
                        LongWLocal = LongWLocal2 + REAL(ILL2-1)/REAL(2)*(LongELocal2-LongWLocal2)
@@ -4572,7 +4573,8 @@
                             Counter = 0
                             CLOSE(UNIT=31,STATUS="KEEP")
                             NumEdgeFiles = NumEdgeFiles + 1
-                            WRITE(UNIT=EdgeFileName,FMT='(A,I3.3,A)') TRIM(TempPath)//TRIM(Fort14File)//".edges.",NumEdgeFiles,".xy"
+                            WRITE(UNIT=EdgeFileName,FMT='(A,I3.3,A)') TRIM(TempPath)//TRIM(Fort14File)//".edges.",&
+                                                                      NumEdgeFiles,".xy"
                             OPEN(UNIT=31,FILE=TRIM(EdgeFileName),ACTION="WRITE")
                         ENDIF
 
@@ -9117,9 +9119,11 @@
 #ifdef NETCDF
                                 
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,&
+                                                              Record=Record)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,&
+                                                              VEC1=U1,VEC2=V1,Record=Record)
                                 ENDIF
 #endif
                             ENDIF
@@ -9127,9 +9131,11 @@
 #ifdef NETCDF
 
                                 IF(ContourFileNumCols2.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VEC1=U2,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VEC1=U2,&
+                                                              Record=Record)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VARID2=NC_Var4,VEC1=U2,VEC2=V2,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VARID2=NC_Var4,&
+                                                              VEC1=U2,VEC2=V2,Record=Record)
                                 ENDIF
 
 #endif
@@ -9241,11 +9247,14 @@
 
                                 IF(IfPlotBackgroundImages.NE.2)THEN
 #ifdef DEPTHDIFF                                
-                                    IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).GT.-90000D0))THEN
+                                    IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.&
+                                       (Vels2(TranslationTable(XYZNodes(I))).GT.-90000D0))THEN
                                         Z(I) = BathLocal(I) - Vels2(TranslationTable(XYZNodes(I)))
-                                    ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
+                                    ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.&
+                                       (Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
                                         Z(I) = Vels1(XYZNodes(I)) - BathLocal(I) 
-                                    ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
+                                    ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.&
+                                       (Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
 #ifdef DRYDIFF
                                         Z(I) = -99999D0
 #else                                    
