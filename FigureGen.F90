@@ -2,7 +2,6 @@
 !
 !                            FIGUREGEN
 !                       By: Casey Dietrich
-!                      SVN Revision: $Rev$
 !
 !  FigureGen is a Fortran program that creates images for ADCIRC files. 
 !  It reads mesh files (fort.14, etc.), nodal attributes files
