@@ -17,11 +17,6 @@
 !  But, at its core, FigureGen behaves like a script, and it uses system 
 !  calls to tell other software how to generate the figure(s).
 !
-! Specific Version Information Follows:
-!    Last Revision Author: $Author$
-!    Last Revision Date: $LastChangedDate$
-!    Current Revision Number: $Rev$
-!
 !----------------------------------------------------------------------!
 !
 !------------------------------------------------------------------!
