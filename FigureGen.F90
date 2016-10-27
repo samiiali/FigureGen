@@ -6539,7 +6539,7 @@
 
 
 
-        SUBROUTINE RemoveIfExists(Ext,Length)
+        SUBROUTINE RemoveIfExists(Ext)
 
                 IMPLICIT NONE
 
@@ -6548,7 +6548,7 @@
                 INTRINSIC                       :: TRIM
 
                 CHARACTER(LEN=1000),ALLOCATABLE :: DirList(:)
-                CHARACTER(LEN=Length)           :: Ext
+                CHARACTER(LEN=*)                :: Ext
                 CHARACTER(LEN=10)               :: Extension
                 CHARACTER(LEN=120),ALLOCATABLE  :: FilesList(:)
                 CHARACTER(LEN=1)                :: JunkC
@@ -11144,7 +11144,7 @@
                         CALL SYSTEM("rm Scale*")
                     ENDIF
 
-                    CALL RemoveIfExists(".bb",3)
+                    CALL RemoveIfExists(".bb")
 
                 ENDIF
 
