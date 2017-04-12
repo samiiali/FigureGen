@@ -2,42 +2,34 @@
 !
 !                            FIGUREGEN
 !                       By: Casey Dietrich
+!                      SVN Revision: $Rev: 51 $
 !
-!  FigureGen is a Fortran program that creates images for ADCIRC files. 
+!  FigureGen is a Fortran program that creates images for ADCIRC files.
 !  It reads mesh files (fort.14, etc.), nodal attributes files
-!  (fort.13, etc.) and output files (fort.63, fort.64, maxele.63, etc.). 
-!  It plots contours, contour lines, and vectors. Using FigureGen, you 
-!  can go directly from the ADCIRC input and output files to a 
+!  (fort.13, etc.) and output files (fort.63, fort.64, maxele.63, etc.).
+!  It plots contours, contour lines, and vectors. Using FigureGen, you
+!  can go directly from the ADCIRC input and output files to a
 !  presentation-quality figure, for one or multiple time snaps.
 !
-!  This program started from a script written by Brian Blanton, 
-!  and I converted it to Fortran because I am more familiar with that 
-!  language. It now contains code written by John Atkinson, Zach Cobell, 
-!  Howard Lander, Chris Szpilka, Matthieu Vitse, Matthew Bilskie, and others.  
-!  But, at its core, FigureGen behaves like a script, and it uses system 
+!  This program started from a script written by Brian Blanton,
+!  and I converted it to Fortran because I am more familiar with that
+!  language. It now contains code written by John Atkinson, Zach Cobell,
+!  Howard Lander, Chris Szpilka, Matthieu Vitse, Matthew Bilskie, and others.
+!  But, at its core, FigureGen behaves like a script, and it uses system
 !  calls to tell other software how to generate the figure(s).
 !
+! Specific Version Information Follows:
+!    Last Revision Author: $Author: zcobell $
+!    Last Revision Date: $LastChangedDate: 2015-02-15 18:44:21 -0700 (Sun, 15 Feb 2015) $
+!    Current Revision Number: $Rev: 51 $
+!
 !----------------------------------------------------------------------!
-
-
-!----------------------------------------------------------------------!
-!...Use the configuration file to compile the code
-!   instead of using many options on the command line.
-!   compile with the option -DHAVE_CONFIG to enable this 
-!   feature. Make sure that the file "FigureGen_Options.h" 
-!   is either in the current directory, or its location is
-!   spcified using the -I/path/to/directory syntax.
-#ifdef HAVE_CONFIG
-#include 'FigureGen_Options.h'
-#endif    
-!----------------------------------------------------------------------!
-
 
 !----------------------------------------------------------------------!
 !    KDTREE2 is (c) Matthew Kennel, Institute for Nonlinear Science (2004)
 !    Licensed under the Academic Free License version 1.1
 !----------------------------------------------------------------------!
-    MODULE KDTREE2_PRECISION_MODULE
+      MODULE KDTREE2_PRECISION_MODULE
           INTEGER, PARAMETER :: SP = KIND(0.0)
           INTEGER, PARAMETER :: DP = KIND(0.0D0)
 
@@ -81,7 +73,7 @@
 
           NALLOC = SIZE(RESULTS_IN,1)
           IF (NALLOC .LT. 1) THEN
-             WRITE (*,*) 'PQ_CREATE: ERROR, INPUT ARRAYS MUST BE '// &
+             WRITE (*,*) 'PQ_CREATE: ERROR, INPUT ARRAYS MUST BE ', &
                 'ALLOCATED.'
           END IF
           RES%ELEMS => RESULTS_IN
@@ -1360,7 +1352,7 @@
       END MODULE KDTREE2_MODULE
 
       MODULE GLOBALVAR
-       
+
             TYPE DATEVAR
                 INTEGER :: YEAR=0
                 INTEGER :: MONTH=0
@@ -1369,8 +1361,8 @@
                 INTEGER :: MINUTE=0
                 INTEGER :: SECOND=0
             END TYPE
-            TYPE(DATEVAR),SAVE  :: ColdStartDate
-            TYPE(DATEVAR),SAVE  :: ResultDate
+            TYPE(DATEVAR)       :: ColdStartDate
+            TYPE(DATEVAR)       :: ResultDate
 
             CHARACTER(LEN=50)   :: AlphaLabel
             CHARACTER(LEN=50)   :: BackgroundImagesFile
@@ -1416,6 +1408,7 @@
             CHARACTER(LEN=50)   :: ParticlePalette
             CHARACTER(LEN=50)   :: ParticlePattern
             CHARACTER(LEN=50)   :: ParticleSize
+            CHARACTER(LEN=50)   :: ParticleTrace
             CHARACTER(LEN=50)   :: ParticleXYZFile
             CHARACTER(LEN=50)   :: PlotLabel
             CHARACTER(LEN=50)   :: PlotLabelFile
@@ -1428,6 +1421,8 @@
             CHARACTER(LEN=50)   :: TimeCurrentFile
             CHARACTER(LEN=50)   :: TimeCurrentTextFile
             CHARACTER(LEN=50)   :: TimeMaxFile
+            CHARACTER(LEN=50)   :: TraceColor
+            CHARACTER(LEN=50)   :: TraceWidth
             CHARACTER(LEN=40)   :: VectorFile
             CHARACTER(LEN=50)   :: VectorFileFormat
             CHARACTER(LEN=50)   :: VectorFileType
@@ -1473,6 +1468,7 @@
             INTEGER             :: IfPlotLabels
             INTEGER             :: IfPlotLogo
             INTEGER             :: IfPlotParticles
+            INTEGER             :: IfPlotParticleTrace
             INTEGER             :: IfPlotVectors
             INTEGER             :: ImageTrimFlag
             INTEGER             :: KeepOpen(15)
@@ -1523,7 +1519,7 @@
             REAL                :: ContourMin
             REAL(8)             :: CurrentTime
             REAL(8)             :: DEG2RAD
-            REAL                :: LatLonBuffer = 0.25 
+            REAL                :: LatLonBuffer = 0.25
             REAL                :: LatN
             REAL                :: LatS
             REAL                :: LongE
@@ -1549,7 +1545,7 @@
             REAL,ALLOCATABLE    :: X(:)
             REAL,ALLOCATABLE    :: Y(:)
             REAL,ALLOCATABLE    :: Z(:)
-            
+
             LOGICAL             :: FileExists
 
             CONTAINS
@@ -1601,17 +1597,17 @@
                 NETCDF_TYPES(36) = "swan_TM02_max"
                 NETCDF_TYPES(37) = "swan_TMM10"
                 NETCDF_TYPES(38) = "swan_TMM10_max"
-                
+
     !....NOTE: The reason some are not implemented is because multiple variables appear in those
     !          NetCDF files and a user input option will need to be speicified before these can
     !          be correctly enabled. In the current scheme, the first variable listed above will
     !          always be found. If need be, you can reorder these to plot the desired variable.
 
-                
+
                 RETURN
-            
+
             END SUBROUTINE
-                
+
     !...This is a subroutine that simply examines the NetCDF file and determines if it
     !   contains any data we can plot
             SUBROUTINE FindMyNetCDFVariable(NCID,Vector,NumCols)
@@ -1628,7 +1624,7 @@
                 CALL CHECK(NF90_INQUIRE(NCID,NVARIABLES=NVAR))
 
                 IF(PRESENT(NumCols))NumCols = 1
-        
+
                 DO I = 1,NVAR
                     CALL CHECK(NF90_INQUIRE_VARIABLE(NCID,I,NAME=NC_NAME))
                     DO J = 1,SIZE(NETCDF_TYPES)
@@ -1646,7 +1642,7 @@
                                     CASE DEFAULT
                                         CONTINUE
                                 END SELECT
-                            ENDIF    
+                            ENDIF
                         ENDIF
                     ENDDO
                     IF(I.EQ.NVAR)THEN
@@ -1656,8 +1652,8 @@
 #endif
                         STOP
                     ENDIF
-                ENDDO    
-            
+                ENDDO
+
             END SUBROUTINE
 
             SUBROUTINE GetNETCDFVarID(NCID,VARID1,VARID2,NCOLS)
@@ -1673,7 +1669,7 @@
                 CHARACTER(200)      :: NC_NAME
 
                 CALL CHECK(NF90_INQUIRE(NCID,NVARIABLES=NVAR))
-        
+
                 DO I = 1,NVAR
                     CALL CHECK(NF90_INQUIRE_VARIABLE(NCID,I,NAME=NC_NAME))
                     DO J = 1,SIZE(NETCDF_TYPES)
@@ -1690,10 +1686,10 @@
                             RETURN
                         ENDIF
                     ENDDO
-                ENDDO    
-                STOP  
-            END SUBROUTINE    
-                    
+                ENDDO
+                STOP
+            END SUBROUTINE
+
             SUBROUTINE ReadMyNETCDFVariable(NCID,NUMNODES,RECORD,VARID1,VEC1,VARID2,VEC2)
                 USE netcdf
                 IMPLICIT NONE
@@ -1709,7 +1705,7 @@
                     CALL CHECK(NF90_GET_VAR(NCID,VARID2,VEC2,START=(/1,RECORD/),COUNT=(/NUMNODES,1/)))
                 ENDIF
                 RETURN
-            END SUBROUTINE    
+            END SUBROUTINE
 
             SUBROUTINE CHECK(Status)
                 USE netcdf
@@ -1729,12 +1725,12 @@
                     !   So we have an appropriate stack trace
                     !   for NetCDF errors
                     Dmy(1) = 0D0
-#endif              
+#endif
 
                     STOP
                 ENDIF
             END SUBROUTINE
-#endif        
+#endif
 
             SUBROUTINE DATEADD(DATE1,ADDSEC,RESULTDATE)
                 IMPLICIT NONE
@@ -1948,7 +1944,7 @@
 #endif
 
                 IMPLICIT NONE
-                
+
                 INTEGER        :: I
                 INTEGER        :: JunkI
 #ifdef NETCDF
@@ -1958,17 +1954,17 @@
 #endif
                 INTEGER        :: NumNodes
                 INTEGER        :: Timesteps
-                
+
                 REAL           :: JunkR
-                
+
                 CHARACTER(50)  :: FileFormat
                 CHARACTER(100) :: InputFile
                 CHARACTER(100) :: JunkC
 
                 IF(TRIM(FileFormat).EQ."ASCII")THEN
-                    OPEN(FILE=TRIM(InputFile),UNIT=100,ACTION="READ") 
+                    OPEN(FILE=TRIM(InputFile),UNIT=100,ACTION="READ")
                     READ(100,*) JunkC
-                    READ(100,*) JunkI, NumNodes, JunkC  
+                    READ(100,*) JunkI, NumNodes, JunkC
                     Count63 = 0
                     DO
                         READ(100,*,END=100) JunkR, JunkR
@@ -1977,8 +1973,8 @@
                         ENDDO
                         Count63 = Count63 + 1
                     ENDDO
-100                 CONTINUE                
-                    CLOSE(100)    
+100                 CONTINUE
+                    CLOSE(100)
                 ELSEIF(TRIM(FileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
                     CALL Check(NF90_OPEN(TRIM(InputFile),NF90_NOWRITE,NC_ID))
@@ -1995,7 +1991,7 @@
 
         SUBROUTINE CreateCPTFiles
 
-                
+
 
                 IMPLICIT NONE
 
@@ -2029,7 +2025,7 @@
                 DOUBLE PRECISION             :: CurrentContour
                 DOUBLE PRECISION,ALLOCATABLE :: DiffContours(:)
 
-                TYPE ColorData 
+                TYPE ColorData
                     DOUBLE PRECISION :: Value1
                     DOUBLE PRECISION :: Red1
                     DOUBLE PRECISION :: Green1
@@ -2165,7 +2161,7 @@
                     PaletteColors(2)%Blue1  = 0
 
                     PaletteColors(3)%Value1 = 1.0d0
-                    PaletteColors(3)%Red1   = 255 
+                    PaletteColors(3)%Red1   = 255
                     PaletteColors(3)%Green1 = 0
                     PaletteColors(3)%Blue1  = 0
 
@@ -2224,7 +2220,7 @@
                                         (DiffContours(I+1)-DiffContours(I))/TempSplitBy
                                 GMTColors(TempIndex)%Value2 = DiffContours(I) + (J  )* &
                                         (DiffContours(I+1)-DiffContours(I))/TempSplitBy
-                                        
+
                                 IF((MakeGray(I).EQ.1).AND.(IfGoogle.EQ.0))THEN
 
                                     GMTColors(TempIndex)%Red1   = 225
@@ -2446,7 +2442,7 @@
                     ENDIF
 
                     DO I=1,NumGMTColors
-                   
+
                         WRITE(UNIT=15,FMT='(2(F16.8,2X,I3,2X,I3,2X,I3,2X))')                     &
                                             GMTColors(I)%Value1,                                 &
                                             NINT(GMTColors(I)%Red1),                             &
@@ -2488,10 +2484,10 @@
                                 WRITE(UNIT=15,FMT='(A)') "B  215  215  215"
                             ELSE
                                 WRITE(UNIT=15,FMT='(A)') "B  255  255  255"
-                            ENDIF    
+                            ENDIF
                         ENDIF
                     ENDIF
-                    
+
                     IF(FoundF)THEN
                         WRITE(UNIT=15,FMT='(A)') TRIM(LineF)
                     ELSE
@@ -2505,15 +2501,15 @@
                                                 NINT(GMTColors(NumGMTColors)%Blue2)
 #endif
                     ENDIF
-                    
+
                     IF(IfPlotBackgroundImages.EQ.2)THEN
                         WRITE(UNIT=15,FMT='(A)') "N -"
-                    ELSE    
+                    ELSE
                         IF(FoundN)THEN
                             WRITE(UNIT=15,FMT='(A)') TRIM(LineN)
                         ELSE
                             WRITE(UNIT=15,FMT='(A)') "N  255  255  255"
-                        ENDIF    
+                        ENDIF
                     ENDIF
 
                     CLOSE(UNIT=15,STATUS="KEEP")
@@ -2522,8 +2518,8 @@
 
                 ENDDO
 
-                IF(ALLOCATED(DiffContours)) DEALLOCATE(DiffContours)        
-                IF(ALLOCATED(MakeGray)) DEALLOCATE(MakeGray)        
+                IF(ALLOCATED(DiffContours)) DEALLOCATE(DiffContours)
+                IF(ALLOCATED(MakeGray)) DEALLOCATE(MakeGray)
                 IF(ALLOCATED(PaletteColors)) DEALLOCATE(PaletteColors)
 
                 IF(Verbose.GE.3)THEN
@@ -2536,7 +2532,7 @@
 
         SUBROUTINE FindContourMinMax
 
-                
+
 
 #ifdef NETCDF
                 USE netcdf
@@ -2615,14 +2611,13 @@
                         ALLOCATE(V1(1:NumNodesGlobal))
                         ALLOCATE(Vels1(1:NumNodesGlobal))
 
-                        loopminmax1: DO J=1,NumRecsLocal 
+                        loopminmax1: DO J=1,NumRecsLocal
 
                             IF(J.LT.RecordsList(CounterLocal))THEN
 
-                                IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN 
+                                IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
-                                                       NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
                                         READ(UNIT=19,FMT=*) JunkI
                                     ENDDO
@@ -2634,18 +2629,16 @@
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
-                                                       NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     NumNodes1 = NumNodesGlobal
                                     CALL GetNETCDFVarID(NC_ID1,NC_VAR,NC_VAR2,ContourFileNumCols)
-                                    
+
                                     ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
                                     IF(ierr.NE.NF90_NOERR)THEN
                                         CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-                                    ENDIF    
-
+                                    ENDIF
 #endif
                                 ENDIF
 
@@ -2666,12 +2659,10 @@
                                 IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     IF(ContourFileNumCols.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,&
-                                                                  VARID1=NC_Var,VEC1=U1)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,VARID1=NC_Var,VEC1=U1)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,&
-                                                                  VARID1=NC_VAR,VEC1=U1,VARID2=NC_VAR2,VEC2=V1)
-                                    ENDIF    
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,RECORD=J,VARID1=NC_VAR,VEC1=U1,VARID2=NC_VAR2,VEC2=V1)
+                                    ENDIF
 #endif
                                 ENDIF
 
@@ -2701,17 +2692,11 @@
                                             U1(JunkI) = U1(JunkI) * ContourConversionFactor
                                             V1(JunkI) = V1(JunkI) * ContourConversionFactor
                                             Vels1(JunkI) = SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
-#ifdef DRYZEROVEL                                            
-                                            IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
-#endif                                            
                                         ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                             U1(I) = U1(I) * ContourConversionFactor
                                             V1(I) = V1(I) * ContourConversionFactor
                                             Vels1(I) = SQRT(U1(I)*U1(I)+V1(I)*V1(I))
-#ifdef DRYZEROVEL                                            
-                                            IF(Vels1(I).EQ.0D0)Vels1(I)=-99999D0
-#endif                                            
 #endif
                                         ENDIF
 
@@ -2961,7 +2946,7 @@
 
                         IF(NumNodes1.NE.NumNodes2.AND..NOT.NeedTranslationTable)THEN
                             WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: The contour files should have the same number of nodes"
-                            WRITE(UNIT=*,FMT='(A)') "             unless two mesh geometries are specified in the input file."  
+                            WRITE(UNIT=*,FMT='(A)') "             unless two mesh geometries are specified in the input file."
 #ifdef CMPI
                             CALL MPI_FINALIZE(IERR)
 #endif
@@ -2977,22 +2962,20 @@
                         ALLOCATE(Vels1(1:NumNodesGlobal))
                         ALLOCATE(Vels2(1:NumNodesMesh2))
 
-                        loopminmax2: DO J=1,NumRecsLocal 
+                        loopminmax2: DO J=1,NumRecsLocal
 
                             IF(J.LT.RecordsList(CounterLocal))THEN
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
-                                                       NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
                                        READ(UNIT=19,FMT=*) JunkI
                                     ENDDO
                                 ENDIF
                                 IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
                                     NumNodes2 = NumNodesMesh2
-                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,&
-                                                       NumNodes2,DefaultValue)
+                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,NumNodes2,DefaultValue)
                                     DO I=1,NumNodes2
                                        READ(UNIT=23,FMT=*) JunkI
                                     ENDDO
@@ -3004,24 +2987,22 @@
 
                                 IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,&
-                                                       NumNodes1,DefaultValue)
+                                    CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1),TRIM(ContourFile1),JunkR,JunkR2,NumNodes1,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     NumNodes1 = NumNodesGlobal
                                     CALL GetNetCDFVarID(NC_ID1,NC_Var,NC_Var2,ContourFileNumCols)
-                                    
+
                                     ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
                                     IF(ierr.NE.NF90_NOERR)THEN
                                         CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-                                    ENDIF    
+                                    ENDIF
 
 #endif
                                 ENDIF
                                 IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
                                     NumNodes2 = NumNodesMesh2
-                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,&
-                                                       NumNodes2,DefaultValue)
+                                    CALL ReadTimeStamp(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),JunkR,JunkR2,NumNodes2,DefaultValue)
                                 ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     NumNodes2 = NumNodesGlobal
@@ -3029,7 +3010,7 @@
                                     ierr = NF90_GET_ATT(NC_ID2,NC_Var,'_FillValue',DefaultValue)
                                     IF(ierr.NE.NF90_NOERR)THEN
                                         CALL Check(NF90_GET_ATT(NC_ID2,NF90_GLOBAL,'_FillValue',DefaultValue))
-                                    ENDIF    
+                                    ENDIF
 
 #endif
                                 ENDIF
@@ -3052,12 +3033,10 @@
                                 IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                     IF(ContourFileNumCOls.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
-                                                                  VEC1=U1,Record=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,Record=J)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
-                                                                  VEC1=U1,VARID2=NC_VAR2,VEC2=V1,Record=J)
-                                    ENDIF    
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,VARID2=NC_VAR2,VEC2=V1,Record=J)
+                                    ENDIF
 #endif
                                 ENDIF
 
@@ -3087,17 +3066,11 @@
                                             U1(JunkI) = U1(JunkI) * ContourConversionFactor
                                             V1(JunkI) = V1(JunkI) * ContourConversionFactor
                                             Vels1(JunkI) = SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
-#ifdef DRYZEROVEL                                            
-                                            IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
-#endif                                            
                                         ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                             U1(I) = U1(I) * ContourConversionFactor
                                             V1(I) = V1(I) * ContourConversionFactor
                                             Vels1(I) = SQRT(U1(I)*U1(I)+V1(I)*V1(I))
-#ifdef DRYZEROVEL                                            
-                                            IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
-#endif                                            
 #endif
                                         ENDIF
 
@@ -3109,12 +3082,10 @@
 #ifdef NETCDF
                                     CALL GetNetCDFVARID(NC_ID2,NC_Var,NC_Var2,ContourFileNumCols)
                                     IF(ContourFileNumCOls.EQ.1)THEN
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var,&
-                                                                  VEC1=U2,RECORD=J)
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var,VEC1=U2,RECORD=J)
                                     ELSE
-                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var,NUMNODES=NumNodesMesh2,&
-                                                                  VEC1=U2,VARID2=NC_VAR2,VEC2=V2,Record=J)
-                                    ENDIF    
+                                        CALL ReadMyNetCDFVariable(NCID=NC_ID2,VARID1=NC_Var,NUMNODES=NumNodesMesh2,VEC1=U2,VARID2=NC_VAR2,VEC2=V2,Record=J)
+                                    ENDIF
 #endif
                                 ENDIF
 
@@ -3144,17 +3115,11 @@
                                             U2(JunkI) = U2(JunkI) * ContourConversionFactor
                                             V2(JunkI) = V2(JunkI) * ContourConversionFactor
                                             Vels2(JunkI) = SQRT(U2(JunkI)*U2(JunkI)+V2(JunkI)*V2(JunkI))
-#ifdef DRYZEROVEL                                            
-                                            IF(Vels2(JunkI).EQ.0D0)Vels2(JunkI)=-99999D0
-#endif                                            
                                         ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
                                             U2(I) = U2(I) * ContourConversionFactor
                                             V2(I) = V2(I) * ContourConversionFactor
                                             Vels2(I) = SQRT(U2(I)*U2(I)+V2(I)*V2(I))
-#ifdef DRYZEROVEL                                            
-                                            IF(Vels2(JunkI).EQ.0D0)Vels2(JunkI)=-99999D0
-#endif                                            
 #endif
                                         ENDIF
 
@@ -3324,7 +3289,7 @@
 
         SUBROUTINE FindVectorScaleMag
 
-                
+
 
 #ifdef NETCDF
                 USE netcdf
@@ -3382,14 +3347,13 @@
                 ALLOCATE(V1(1:NumNodesGlobal))
                 ALLOCATE(Vels1(1:NumNodesGlobal))
 
-                loopvectorscale: DO J=1,NumRecsLocal 
+                loopvectorscale: DO J=1,NumRecsLocal
 
                     IF(J.LT.RecordsList(CounterLocal))THEN
 
                         IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
                             NumNodes1 = NumNodesGlobal
-                            CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),JunkR,JunkR2,&
-                                               NumNodes1,DefaultValue)
+                            CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),JunkR,JunkR2,NumNodes1,DefaultValue)
                             DO I=1,NumNodes1
                                 READ(UNIT=20,FMT=*) JunkI
                             ENDDO
@@ -3410,7 +3374,7 @@
                             ierr = NF90_GET_ATT(NC_ID,NC_Var,'_FillValue',DefaultValue)
                             IF(ierr.NE.NF90_NOERR)THEN
                                 CALL Check(NF90_GET_ATT(NC_ID,NF90_GLOBAL,'_FillValue',DefaultValue))
-                            ENDIF    
+                            ENDIF
 
 #endif
                         ENDIF
@@ -3431,8 +3395,7 @@
 
                         IF(TRIM(VectorFileFormat).EQ."NETCDF")THEN
 #ifdef NETCDF
-                            CALL ReadMyNetCDFVariable(NCID=NC_ID,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
-                                                      VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=J)
+                            CALL ReadMyNetCDFVariable(NCID=NC_ID,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=J)
 #endif
                         ENDIF
 
@@ -3499,12 +3462,12 @@
 
         SUBROUTINE GoogleKML(WorkingRecord,IL1,IL2,IL3)
 
-              
+
 
               IMPLICIT NONE
 
               INTRINSIC         :: LEN_TRIM
-              INTRINSIC         :: REAL 
+              INTRINSIC         :: REAL
               INTRINSIC         :: TRIM
 
               CHARACTER(LEN=90) :: GoogleLabel
@@ -3568,8 +3531,7 @@
 
               OPEN(UNIT=35,FILE=TRIM(GoogleLabel)//".kml",ACTION="WRITE")
 
-              WRITE(UNIT=35,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//ACHAR(34)//&
-                                            "UTF-8"//ACHAR(34)//"?>"
+              WRITE(UNIT=35,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//ACHAR(34)//"UTF-8"//ACHAR(34)//"?>"
               WRITE(UNIT=35,FMT='(A)') "<kml xmlns="//ACHAR(34)//"http://earth.google.com/kml/2.1"//ACHAR(34)//">"
               WRITE(UNIT=35,FMT='(A)') "   <Document>"
               WRITE(UNIT=35,FMT='(A)') "      <Name>"//TRIM(GoogleLabel)//"</Name>"
@@ -3844,8 +3806,7 @@
                  DO ILL2=1,2
                     DO ILL3=1,2
 
-                       WRITE(UNIT=TempLabel,FMT=9722) TRIM(AlphaLabel),WorkingRecord,"-",IL1+1,"-",&
-                                                      (IL2-1)*2+ILL2,"-",(IL3-1)*2+ILL3
+                       WRITE(UNIT=TempLabel,FMT=9722) TRIM(AlphaLabel),WorkingRecord,"-",IL1+1,"-",(IL2-1)*2+ILL2,"-",(IL3-1)*2+ILL3
  9722                  FORMAT(A,I4.4,A,I2.2,A,I2.2,A,I2.2)
 
                        LongWLocal = LongWLocal2 + REAL(ILL2-1)/REAL(2)*(LongELocal2-LongWLocal2)
@@ -3901,7 +3862,7 @@
 
         SUBROUTINE GoogleKMZ
 
-              
+
 
               IMPLICIT NONE
 
@@ -3927,8 +3888,7 @@
 
                  OPEN(UNIT=36,FILE=TRIM(GoogleLabel)//".kml",ACTION="WRITE")
 
-                 WRITE(UNIT=36,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//&
-                                                ACHAR(34)//"UTF-8"//ACHAR(34)//"?>"
+                 WRITE(UNIT=36,FMT='(A)') "<?xml version="//ACHAR(34)//"1.0"//ACHAR(34)//" encoding="//ACHAR(34)//"UTF-8"//ACHAR(34)//"?>"
                  WRITE(UNIT=36,FMT='(A)') "<kml xmlns="//ACHAR(34)//"http://earth.google.com/kml/2.1"//ACHAR(34)//">"
                  WRITE(UNIT=36,FMT='(A)') "   <Document>"
                  WRITE(UNIT=36,FMT='(A)') "      <Name>"//TRIM(GoogleLabel)//"</Name>"
@@ -3938,8 +3898,7 @@
                     WRITE(UNIT=36,FMT='(A)')        "      <NetworkLink>"
                     WRITE(UNIT=36,FMT='(A,I4.4,A)') "         <Name>"//TRIM(GoogleLabel)//"_",RecordsList(IR),"</Name>"
                     WRITE(UNIT=36,FMT='(A)')        "         <Link>"
-                    WRITE(UNIT=36,FMT='(A,I4.4,A)') "            <href>"//TRIM(GoogleLabel)//"_",RecordsList(IR),&
-                                                                    "-01-01-01.kml"//"</href>"
+                    WRITE(UNIT=36,FMT='(A,I4.4,A)') "            <href>"//TRIM(GoogleLabel)//"_",RecordsList(IR),"-01-01-01.kml"//"</href>"
                     WRITE(UNIT=36,FMT='(A)')        "         </Link>"
                     WRITE(UNIT=36,FMT='(A)')        "      </NetworkLink>"
 
@@ -3994,7 +3953,7 @@
 
         SUBROUTINE MapColor
 
-                
+
 
 #ifdef NETCDF
                 USE netcdf
@@ -4181,10 +4140,10 @@
         SUBROUTINE MakeTranslationTable
 #ifdef NETCDF
             USE netcdf
-#endif            
+#endif
             USE KDTREE2_MODULE
             IMPLICIT NONE
-            
+
             CHARACTER(40)         :: JunkC
             INTEGER               :: I
             INTEGER               :: JunkI
@@ -4205,7 +4164,7 @@
 #ifndef NETCDF
                 WRITE(*,'(A)') "ERROR: Not compiled for NetCDF"
                 STOP
-#else            
+#else
                 CALL CHECK(NF90_OPEN(TRIM(Fort14File2),NF90_NOWRITE,NCID))
                 CALL CHECK(NF90_INQ_DIMID(NCID,"node",NODEDIM))
                 CALL CHECK(NF90_INQUIRE_DIMENSION(NCID,NODEDIM,LEN=NN))
@@ -4226,7 +4185,7 @@
                     READ(141,*) JunkI,G2XY(1,I),G2XY(2,I)
                 ENDDO
                 CLOSE(141)
-            ENDIF    
+            ENDIF
 
             ALLOCATE(TranslationTable(1:NumNodesGlobal))
 
@@ -4275,7 +4234,7 @@
             READ(60,*) ListLength
             ALLOCATE(List(1:ListLength))
             ALLOCATE(Tag(1:ListLength))
-            
+
             DO I = 1,ListLength
                 READ(60,*) List(I),Tag(I)
                 INQUIRE(FILE=TRIM(List(I)),EXIST=FOUND)
@@ -4304,7 +4263,7 @@
             ALLOCATE(RecordsList(1:ListLength))
             DO I = 1,ListLength
                 RecordsList(I) = I
-            ENDDO    
+            ENDDO
 
             RETURN
 
@@ -4314,7 +4273,7 @@
 
         SUBROUTINE ProcessFort14File
 
-                
+
 
 #ifdef NETCDF
                 USE netcdf
@@ -4450,27 +4409,27 @@
                     IF(Lat(I).LT.(LatS-LatLonBuffer))CYCLE
                     NPT(I) = 1
                 ENDDO
-                        
-                        
+
+
 
         ! Shouldn't be necessary now that we have switched to a larger page?
-                
+
         !       IF(DoCenter.EQ.1)THEN
-                
+
         !           Temp_Long = Long(C_Node)
         !           Temp_Lat = Lat(C_Node)
-                    
+
                     !...Correct Aspect Ratio to 3:2 to prevent
                     ! plotting off of page.
         !           IF((C_Width/C_Height).LT.(1.5))THEN
         !               C_Width = C_Height * 1.5
         !           ENDIF
-                    
+
         !           LongW = Temp_Long - C_Width / 2.0d0
         !           LongE = Temp_Long + C_Width / 2.0d0
         !           LatN = Temp_Lat + C_Height / 2.0d0
         !           LatS = Temp_Lat - C_Height / 2.0d0
-                    
+
         !           NPT = 0
         !           DO I=1,NumNodesGlobal
         !               IF(Long(I).GT.(LongE+LatLonBuffer))CYCLE
@@ -4479,7 +4438,7 @@
         !               IF(Lat(I).LT.(LatS-LatLonBuffer))CYCLE
         !               NPT(I) = 1
         !           ENDDO
-                    
+
         !       ENDIF
 
                 NumNodesLocal = SUM(NPT)
@@ -4567,8 +4526,7 @@
                             Counter = 0
                             CLOSE(UNIT=31,STATUS="KEEP")
                             NumEdgeFiles = NumEdgeFiles + 1
-                            WRITE(UNIT=EdgeFileName,FMT='(A,I3.3,A)') TRIM(TempPath)//TRIM(Fort14File)//".edges.",&
-                                                                      NumEdgeFiles,".xy"
+                            WRITE(UNIT=EdgeFileName,FMT='(A,I3.3,A)') TRIM(TempPath)//TRIM(Fort14File)//".edges.",NumEdgeFiles,".xy"
                             OPEN(UNIT=31,FILE=TRIM(EdgeFileName),ACTION="WRITE")
                         ENDIF
 
@@ -4708,7 +4666,7 @@
                             ENDIF
 
                             IF(I.GT.1)THEN
-                              
+
                                 IF(((Long(NINT(OpenBoundaries(J)%Entry1(I-1))).GE.(LongW-LatLonBuffer)).AND. &
                                     (Long(NINT(OpenBoundaries(J)%Entry1(I-1))).LE.(LongE+LatLonBuffer)).AND. &
                                     (Lat(NINT(OpenBoundaries(J)%Entry1(I-1))).GE.(LatS -LatLonBuffer)).AND.  &
@@ -4726,7 +4684,7 @@
                                                         Long(NINT(OpenBoundaries(J)%Entry1(I))),   &
                                                         Lat(NINT(OpenBoundaries(J)%Entry1(I)))
                                     Counter = Counter + 1
-                                    
+
                                 ENDIF
 
                             ENDIF
@@ -4790,9 +4748,9 @@
                            (LandBoundaries(J)%Code.EQ.52))THEN
 
                             ALLOCATE(LandBoundaries(J)%Entry1(1:LandBoundaries(J)%NumNodes))
-         
+
                             DO I=1,LandBoundaries(J)%NumNodes
-         
+
                                 IF(TRIM(GridFileFormat).EQ."ASCII")THEN
                                     READ(24,*) LandBoundaries(J)%Entry1(I)
                                 ELSEIF(TRIM(GridFileFormat).EQ."NETCDF")THEN
@@ -4806,7 +4764,7 @@
                                 ENDIF
 
                                 IF(I.GT.1)THEN
-                                
+
                                     IF(((Long(NINT(LandBoundaries(J)%Entry1(I-1))).GE.(LongW-LatLonBuffer)).AND. &
                                         (Long(NINT(LandBoundaries(J)%Entry1(I-1))).LE.(LongE+LatLonBuffer)).AND. &
                                         (Lat(NINT(LandBoundaries(J)%Entry1(I-1))).GE.(LatS -LatLonBuffer)).AND.  &
@@ -4824,7 +4782,7 @@
                                                             Long(NINT(LandBoundaries(J)%Entry1(I))),   &
                                                             Lat(NINT(LandBoundaries(J)%Entry1(I)))
                                         Counter = Counter + 1
-                                        
+
                                     ENDIF
 
                                 ENDIF
@@ -4847,7 +4805,7 @@
                                 ENDIF
 
                                 IF(I.GT.1)THEN
-                                
+
                                     IF(((Long(NINT(LandBoundaries(J)%Entry1(I-1))).GE.(LongW-LatLonBuffer)).AND. &
                                         (Long(NINT(LandBoundaries(J)%Entry1(I-1))).LE.(LongE+LatLonBuffer)).AND. &
                                         (Lat(NINT(LandBoundaries(J)%Entry1(I-1))).GE.(LatS -LatLonBuffer)).AND.  &
@@ -4865,7 +4823,7 @@
                                                             Long(NINT(LandBoundaries(J)%Entry1(I))),   &
                                                             Lat(NINT(LandBoundaries(J)%Entry1(I)))
                                         Counter = Counter + 1
-                                        
+
                                     ENDIF
 
                                 ENDIF
@@ -4891,7 +4849,7 @@
                                             WRITE(UNIT=16,FMT='(2(F11.6,1X))')                              &
                                                                 Long(NINT(LandBoundaries(J)%Entry2(I))),   &
                                                                 Lat(NINT(LandBoundaries(J)%Entry2(I)))
-                                            Counter = Counter + 1                               
+                                            Counter = Counter + 1
                                         ENDIF
                                     ENDIF
                                 ENDDO
@@ -4902,7 +4860,7 @@
                             WRITE(*,'(A)',ADVANCE="YES") " "
                             WRITE(*,'(A)',ADVANCE="YES") "ERROR!"
                             WRITE(*,'(A,I4)',ADVANCE="YES") "J = ", J
-                            WRITE(*,'(A,I10)',ADVANCE="YES") "LandBoundaries(J)%Code = ", LandBoundaries(J)%Code 
+                            WRITE(*,'(A,I10)',ADVANCE="YES") "LandBoundaries(J)%Code = ", LandBoundaries(J)%Code
 
                         ENDIF
 
@@ -4964,7 +4922,7 @@
 #ifdef NETCDF
                 USE netcdf
 #endif
-                
+
 
                 IMPLICIT NONE
 
@@ -5013,7 +4971,7 @@
                 READ(UNIT=11,FMT='(A1)')  JunkC ! FOR BEST RESULTS ...
                 READ(UNIT=11,FMT='(A1)')  JunkC ! 01234567890 ...
 
-                READ(UNIT=11,FMT=*)       Verbose 
+                READ(UNIT=11,FMT=*)       Verbose
                 READ(UNIT=11,FMT='(A50)') Path
                 IF(VersionNumber.LT.41)THEN
                     GSPath = " "
@@ -5032,7 +4990,7 @@
                     ELSE
                         CLOSE(99,STATUS="DELETE")
                     ENDIF
-                ENDIF    
+                ENDIF
                 READ(UNIT=11,FMT='(A50)') AlphaLabel
                 READ(UNIT=11,FMT='(A50)') TempC
                 IF(TempC(1:1).EQ."1")THEN
@@ -5045,10 +5003,10 @@
                     BACKSPACE(11)
                     READ(11,*) JunkI,ColdStartDate%Year,ColdStartDate%Month,ColdStartDate%Day, &
                         ColdStartDate%Hour,ColdStartDate%Minute,ColdStartDate%Second
-                ENDIF        
+                ENDIF
 
                 READ(UNIT=11,FMT='(A50)') TempC
-                
+
                 CALL CapitalizeWord(TempC)
                 IF(TRIM(TempC).EQ."CENTER")THEN
                     DoCenter = 1
@@ -5061,8 +5019,8 @@
                     READ(UNIT=11,FMT=*) LongE
                     READ(UNIT=11,FMT=*) LatS
                     READ(UNIT=11,FMT=*) LatN
-                ENDIF    
-                   
+                ENDIF
+
                 IF(LongW.GE.LongE)THEN
                     TempR = LongW
                     LongW = LongE
@@ -5106,8 +5064,8 @@
 
                         ERROR = .TRUE.
                         RETURN
-                    ENDIF    
-                ENDIF    
+                    ENDIF
+                ENDIF
 
 
                 IF(INDEX(Fort14File,".nc").GT.0)THEN
@@ -5120,10 +5078,10 @@
                         IF(MyRank.EQ.0)THEN
                             WRITE(*,'(A)') "FATAL ERROR: Grid file is not in NetCDF format."
                         ENDIF
-                    
+
                     ERROR = .TRUE.
                     RETURN
-                    
+
                     ENDIF
 #else
                     IF(MyRank.EQ.0)THEN
@@ -5144,40 +5102,39 @@
                 READ(UNIT=11,FMT=*)       IfPlotGrid
 
                 READ(UNIT=11,FMT='(A1)')  JunkC ! PARAMETERS FOR CONTOURS
-                
+
                 READ(UNIT=11,FMT=*)       IfPlotFilledContours
                 READ(UNIT=11,FMT=*)       IfPlotContourLines
                 IF((IfPlotFilledContours.EQ.1).AND.(IfPlotContourLines.EQ.2))THEN
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: IfPlotFilledContours = 1, then IfPlotContourLines = 0 or 1."
                     ENDIF
-                
+
                     ERROR = .TRUE.
                     RETURN
-                
+
                 ENDIF
                 IF((IfPlotFilledContours.EQ.2).AND.(IfPlotContourLines.EQ.1))THEN
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: IfPlotFilledContours = 2, then IfPlotContourLines = 0 or 2."
                     ENDIF
-                
-                
+
+
                     ERROR = .TRUE.
                     RETURN
-                
+
                 ENDIF
                 READ(UNIT=11,FMT='(A50)') TempC
                 IF(IfPlotFilledContours.LE.1)THEN
                     IF(INDEX(TempC,",").GT.0)THEN
                         IF(MyRank.EQ.0)THEN
-                            WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: IfPlotFilledContours = 0 or 1, then "//&
-                                        "list only one contour file name."
+                            WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: IfPlotFilledContours = 0 or 1, then list only one contour file name."
                         ENDIF
-                    
-                    
+
+
                         ERROR = .TRUE.
                         RETURN
-                    
+
                     ENDIF
                     ContourFile1 = TRIM(TempC)
                     INQUIRE(FILE=TRIM(ContourFile1),EXIST=FileExists)
@@ -5186,10 +5143,10 @@
                             IF(MyRank.EQ.0)THEN
                                 WRITE(*,'(A)') "FATAL ERROR: The contour file does not exist. FigureGen is quitting."
                             ENDIF
-                        
+
                             ERROR = .TRUE.
                             RETURN
-                        
+
                         ELSE
                             GOTO 2222
                         ENDIF
@@ -5204,10 +5161,10 @@
                             IF(MyRank.EQ.0)THEN
                                 WRITE(*,'(A)') "FATAL ERROR: Contour file is not in NetCDF format."
                             ENDIF
-                        
+
                             ERROR = .TRUE.
                             RETURN
-                        
+
                         ENDIF
 #else
                         IF(MyRank.EQ.0)THEN
@@ -5217,10 +5174,10 @@
                             WRITE(*,'(A)') "   pgf90 FigureGen.F90 -DNETCDF -I$TACC_NETCDF_INC -L$TACC_NETCDF_LIB -lnetcdf"
                             WRITE(*,'(A)') " "
                         ENDIF
-                        
+
                         ERROR = .TRUE.
                         RETURN
-#endif              
+#endif
                     ELSE
                         WRITE(ContourFileFormat1,'(A)') "ASCII"
                     ENDIF
@@ -5229,10 +5186,10 @@
                         IF(MyRank.EQ.0)THEN
                             WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: IfPlotFilledContours = 2, then list two contour file names."
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
-                    
+
                     ENDIF
                     ContourFile1 = TempC(1:INDEX(TempC,",")-1)
                     INQUIRE(FILE=TRIM(ContourFile1),EXIST=FileExists)
@@ -5240,7 +5197,7 @@
                         IF(MyRank.EQ.0)THEN
                             WRITE(*,'(A)') "FATAL ERROR: The contour file does not exist. FigureGen is quitting."
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
                     ENDIF
@@ -5254,10 +5211,10 @@
                             IF(MyRank.EQ.0)THEN
                                 WRITE(*,'(A)') "FATAL ERROR: Contour file is not in NetCDF format."
                             ENDIF
-                        
+
                             ERROR = .TRUE.
                             RETURN
-                        
+
                         ENDIF
 #else
                         IF(MyRank.EQ.0)THEN
@@ -5267,10 +5224,10 @@
                             WRITE(*,'(A)') "   pgf90 FigureGen.F90 -DNETCDF -I$TACC_NETCDF_INC -L$TACC_NETCDF_LIB -lnetcdf"
                             WRITE(*,'(A)') " "
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
-#endif                    
+#endif
                     ELSE
                         WRITE(ContourFileFormat1,'(A)') "ASCII"
                     ENDIF
@@ -5280,10 +5237,10 @@
                         IF(MyRank.EQ.0)THEN
                             WRITE(*,'(A)') "FATAL ERROR: The contour file does not exist. FigureGen is quitting."
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
-                    
+
                     ENDIF
                     IF(INDEX(ContourFile2,".nc").GT.0)THEN
 #ifdef NETCDF
@@ -5295,10 +5252,10 @@
                             IF(MyRank.EQ.0)THEN
                                 WRITE(*,'(A)') "FATAL ERROR: Contour file is not in NetCDF format."
                             ENDIF
-                        
+
                             ERROR = .TRUE.
                             RETURN
-                        
+
                         ENDIF
 #else
                         IF(MyRank.EQ.0)THEN
@@ -5308,17 +5265,17 @@
                             WRITE(*,'(A)') "   pgf90 FigureGen.F90 -DNETCDF -I$TACC_NETCDF_INC -L$TACC_NETCDF_LIB -lnetcdf"
                             WRITE(*,'(A)') " "
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
-#endif                    
+#endif
                     ELSE
                         WRITE(ContourFileFormat2,'(A)') "ASCII"
                     ENDIF
                 ENDIF
  2222           CONTINUE
                 READ(UNIT=11,FMT='(A)')   ContourFileType
-                
+
                 !...Check if we're doing a list of plots
                 IF(TRIM(ContourFileType).EQ."ADCIRC-OUTPUT-LIST")THEN
                     OutputFileList = .TRUE.
@@ -5366,37 +5323,37 @@
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: ContourFileType = GRID-DECOMP, but IfPlotFilledContours = 2."
                     ENDIF
-                
+
                     ERROR = .TRUE.
                     RETURN
-                
+
                 ENDIF
                 IF((INDEX(ContourFileType,"GRID-DECOMP").GT.0).AND.(IfPlotContourLines.EQ.2))THEN
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: ContourFileType = GRID-DECOMP, but IfPlotContourLines = 2."
                     ENDIF
-                
+
                     ERROR = .TRUE.
                     RETURN
-                
+
                 ENDIF
                 IF((TRIM(ContourFileType).EQ."GRID-SIZE").AND.(IfPlotFilledContours.EQ.2))THEN
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: ContourFileType = GRID-SIZE, but IfPlotFilledContours = 2."
                     ENDIF
-                
+
                     ERROR = .TRUE.
                     RETURN
-                
+
                 ENDIF
                 IF((TRIM(ContourFileType).EQ."GRID-SIZE").AND.(IfPlotContourLines.EQ.2))THEN
                     IF(MyRank.EQ.0)THEN
                         WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: ContourFileType = GRID-SIZE, but IfPlotContourLines = 2."
                     ENDIF
-                
+
                     ERROR = .TRUE.
                     RETURN
-                
+
                 ENDIF
                 IF(TRIM(ContourFileType).EQ."HWM-CSV")THEN
                     IF(IfPlotFilledContours.GT.0)THEN
@@ -5439,10 +5396,10 @@
                         IF(MyRank.EQ.0)THEN
                             WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: Palette = RGB, SMS or CPT, then list only one file name."
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
-                    
+
                     ENDIF
                     SMSPalette = TRIM(TempC)
                     INQUIRE(FILE=TRIM(SMSPalette),EXIST=FileExists)
@@ -5452,26 +5409,26 @@
                         ENDIF
                         ERROR = .TRUE.
                         RETURN
-                    ENDIF 
+                    ENDIF
                 ELSE
                     IF(INDEX(ContourFileType,"GRID-DECOMP").GT.0)THEN
                         IF(MyRank.EQ.0)THEN
                             WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: Do not use the (SMS/CPT)+INTERVALS option " &
                                                     //" when plotting the grid decomposition."
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
-                    
+
                     ENDIF
                     IF(INDEX(TempC,",").LE.0)THEN
                         IF(MyRank.EQ.0)THEN
                             WRITE(UNIT=*,FMT='(A)') "FATAL ERROR: Palette = (SMS/CPT)+INTERVALS, then list two file names."
                         ENDIF
-                        
+
                         ERROR = .TRUE.
                         RETURN
-                    
+
                     ENDIF
                     SMSPalette = TempC(1:INDEX(TempC,",")-1)
                     INQUIRE(FILE=TRIM(SMSPalette),EXIST=FileExists)
@@ -5479,11 +5436,11 @@
                         IF(MyRank.EQ.0)THEN
                             WRITE(*,'(A)') "FATAL ERROR: The palette file does not exist. FigureGen is quitting."
                         ENDIF
-                    
+
                         ERROR = .TRUE.
                         RETURN
-                    
-                    ENDIF 
+
+                    ENDIF
                     DiffContoursFile = TempC(INDEX(TempC,",")+1:LEN_TRIM(TempC))
                     INQUIRE(FILE=TRIM(DiffContoursFile),EXIST=FileExists)
                     IF(.NOT.FileExists)THEN
@@ -5492,7 +5449,7 @@
                         ENDIF
                         ERROR = .TRUE.
                         RETURN
-                    ENDIF 
+                    ENDIF
                 ENDIF
                 READ(UNIT=11,FMT='(A40)') ColorLines
                 IF(TRIM(ColorLines).EQ."GRID-BATH")THEN
@@ -5552,7 +5509,7 @@
                 ELSE
                     ColorLines = "DEFAULT"
                 ENDIF
-                
+
                 READ(UNIT=11,FMT='(A50)') TempC
                 IF(INDEX(Palette,"INTERVALS").LE.0)THEN
                     IF(TempC(1:4).EQ."FIND")THEN
@@ -5650,22 +5607,26 @@
                                 ParticlePattern = TempC(LEN_TRIM(ParticleSize)+2:I-1)
                                 ParticleColor   = TempC(I+1:LEN_TRIM(TempC))
                                 CALL LowercaseWord(ParticleColor)
-                                
+
                                 !...Cobell - Check for a palette file
                                 IF(INDEX(ParticleColor,"cpt").GT.0)THEN
                                     UseParticlePalette = .TRUE.
-                                    ParticlePalette    = TempC(I+5:LEN_TRIM(TempC))
+                                    ParticlePalette    = TempC(I+1:LEN_TRIM(TempC))
                                 ELSE
                                     IF(INDEX(ParticleColor,",").GT.0)THEN
                                         ParticleColor = ParticleColor(1:INDEX(ParticleColor,",")-1)
                                     ENDIF
                                 ENDIF
-                                    
+
                                 EXIT pth2
                             ENDIF
                         ENDDO pth2
                     ENDIF
-
+                    ! This is where we add particle trace stuff
+                    IfPlotParticleTrace = 1
+                    TraceWidth = "0.1"
+                    TraceColor = "black"
+                    ! End of particle trace stuff
                 ENDIF
 
                 READ(UNIT=11,FMT='(A1)')  JunkC ! PARAMETERS FOR VECTORS
@@ -5921,7 +5882,7 @@
                             ENDIF
                             ERROR = .TRUE.
                             RETURN
-                        ENDIF 
+                        ENDIF
                     ELSE
                         IfPlotDotsLines = 0
                     ENDIF
@@ -5947,7 +5908,7 @@
                             ENDIF
                             ERROR = .TRUE.
                             RETURN
-                        ENDIF 
+                        ENDIF
                     ELSE
                         IfPlotLabels = 0
                     ENDIF
@@ -5967,7 +5928,7 @@
                             ENDIF
                             ERROR = .TRUE.
                             RETURN
-                        ENDIF 
+                        ENDIF
                     ELSE
                         IfPlotLabels = 0
                     ENDIF
@@ -5998,7 +5959,7 @@
                             ENDIF
                             ERROR = .TRUE.
                             RETURN
-                        ENDIF 
+                        ENDIF
                     ENDIF
                 ENDIF
                 IF(VersionNumber.LT.47)THEN
@@ -6402,26 +6363,26 @@
                     RecordsInc = ABS(NumRecords)
                     READ(UNIT=11,FMT=*) RecordsBegin
                     READ(UNIT=11,FMT=*) RecordsEnd
-                        
+
                         !...Added - Zach
                         ! Don't know if this functionality is available by another means, but I just added this for my own
                         ! purposes to say grab the last 10 timesnaps before a blowup by setting in the input file:
                         ! RecordsInc = -1
                         ! RecordsBegin = -10
                         ! RecordsEnd = 0
-                        
+
                     IF((RecordsBegin.LT.0).OR.(RecordsEnd.LE.0))THEN
                         NumRecs63 = Count63(TRIM(ContourFile1),TRIM(ContourFileFormat1))
                     ENDIF
-                       
+
                     IF(RecordsBegin.LE.0)THEN
                         RecordsBegin = NumRecs63 + RecordsBegin
                     ENDIF
-                        
+
                     IF(RecordsEnd.LE.0)THEN
                         RecordsEnd = NumRecs63 + RecordsEnd
-                    ENDIF  
-                       
+                    ENDIF
+
                     NumRecords = (RecordsEnd - RecordsBegin + 1)/RecordsInc
                     ALLOCATE(RecordsList(1:NumRecords))
                     DO I=1,NumRecords
@@ -6445,7 +6406,7 @@
                 IMPLICIT NONE
 
                 CHARACTER(LEN=50),INTENT(IN) :: FileName
-                CHARACTER(LEN=50)            :: FileNameDisplay 
+                CHARACTER(LEN=50)            :: FileNameDisplay
                 CHARACTER(LEN=250)           :: Line
 
                 INTEGER,INTENT(IN)           :: FileNameLen
@@ -6500,7 +6461,7 @@
                 INTRINSIC                    :: TRIM
 
                 CHARACTER(LEN=*),INTENT(IN)  :: FileName
-                CHARACTER(LEN=50)            :: FileNameDisplay 
+                CHARACTER(LEN=50)            :: FileNameDisplay
                 CHARACTER(LEN=100)           :: Line
 
                 INTEGER,INTENT(IN)           :: FileNameLen
@@ -6539,7 +6500,7 @@
 
 
 
-        SUBROUTINE RemoveIfExists(Ext)
+        SUBROUTINE RemoveIfExists(Ext,Length)
 
                 IMPLICIT NONE
 
@@ -6548,7 +6509,7 @@
                 INTRINSIC                       :: TRIM
 
                 CHARACTER(LEN=1000),ALLOCATABLE :: DirList(:)
-                CHARACTER(LEN=*)                :: Ext
+                CHARACTER(LEN=Length)           :: Ext
                 CHARACTER(LEN=10)               :: Extension
                 CHARACTER(LEN=120),ALLOCATABLE  :: FilesList(:)
                 CHARACTER(LEN=1)                :: JunkC
@@ -6655,7 +6616,7 @@
 
         SUBROUTINE WritePSImage(Record,IL1,IL2,IL3)
 
-                
+
 
                 IMPLICIT NONE
 
@@ -6733,6 +6694,7 @@
                 INTEGER           :: Position
                 INTEGER           :: NumLabels
                 INTEGER           :: NumLogos
+                INTEGER           :: NumParticles
                 INTEGER           :: Record
 
                 LOGICAL           :: AddBackgroundImage
@@ -6823,11 +6785,11 @@
                 OPEN(UNIT=29,FILE=TRIM(TempMapFile1),ACTION="WRITE")
                 WRITE(UNIT=29,FMT=*) LongELocal,LatNLocal
                 CLOSE(UNIT=29,STATUS="KEEP")
-                IF(IfGoogle.EQ.0)THEN        
+                IF(IfGoogle.EQ.0)THEN
                     CALL SYSTEM(TRIM(Path)//"mapproject "//TRIM(TempMapFile1)                 &
                                 //" -Di "//TRIM(ProjectionC)//" -R"//TRIM(ADJUSTL(XMin))//"/" &
                                 //TRIM(ADJUSTL(XMax))//"/"//TRIM(ADJUSTL(YMin))//"/"          &
-                                //TRIM(ADJUSTL(YMax))//" > "//TRIM(TempMapFile2))                        
+                                //TRIM(ADJUSTL(YMax))//" > "//TRIM(TempMapFile2))
                 ELSEIF(IfGoogle.EQ.1)THEN
                     CALL SYSTEM(TRIM(Path)//"mapproject "//TRIM(TempMapFile1)               &
                                 //" -Di "//TRIM(ProjectionC)                                &
@@ -6855,7 +6817,7 @@
 
                 WRITE(UNIT=HeightC,FMT=1236) Height
 
-                IF((IfAddTimeBar.EQ.0).AND.(IfPlotVectors.EQ.0))THEN 
+                IF((IfAddTimeBar.EQ.0).AND.(IfPlotVectors.EQ.0))THEN
                     ScaleHeight = Height - 0.3 - SideBarTriangleHeight
                 ELSEIF(((IfAddTimeBar.EQ.1).OR.(IfAddTimeBar.EQ.2).OR.IfAddTimeBar.EQ.3).AND.(IfPlotVectors.EQ.0))THEN
                     ScaleHeight = Height - 1.2 - SideBarTriangleHeight
@@ -7092,9 +7054,9 @@
                         IF(TRIM(ContourFileType).EQ."OWI-PRESS".OR.TRIM(ContourFileType).EQ."OWI-WIND")THEN
                             !Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(ContourFile1)//".tri"
                             !...Let GMT triangulate on its own
-                        ELSE    
+                        ELSE
                             Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(Fort14File)//".tri"
-                        ENDIF    
+                        ENDIF
                         IF(KeepOpen(1).EQ.1)THEN
                             Line = TRIM(Line)//" "//"-K"
                         ENDIF
@@ -7252,7 +7214,7 @@
                             !...Lets use GMT triangulation
                         ELSE
                             Line = TRIM(Line)//" "//"-T"//TRIM(TempPath)//TRIM(Fort14File)//".tri"
-                        ENDIF    
+                        ENDIF
                         IF(KeepOpen(3).EQ.1)THEN
                             Line = TRIM(Line)//" "//"-K"
                         ENDIF
@@ -7318,10 +7280,17 @@
 
                 ENDIF
 
+!                Ali
+!                IF(((IfPlotFilledContours.GE.1).OR.((IfPlotContourLines.GE.1).AND.(INDEX(ColorLines,"CONTOUR").GT.0)).OR. &
+!                   ((IfPlotGrid.GT.0).AND.(INDEX(ColorLines,"GRID").GT.0)).OR. &
+!                   (TRIM(ContourFileType).EQ."HWM-CSV")).AND.(INDEX(ColorLines,"GRID-DECOMP").LE.0).AND.(IL1.EQ.1).AND.   &
+!                   UseParticlePalette.EQV..FALSE.)THEN
+!                Ali
+
                 IF(((IfPlotFilledContours.GE.1).OR.((IfPlotContourLines.GE.1).AND.(INDEX(ColorLines,"CONTOUR").GT.0)).OR. &
                    ((IfPlotGrid.GT.0).AND.(INDEX(ColorLines,"GRID").GT.0)).OR. &
-                   (TRIM(ContourFileType).EQ."HWM-CSV")).AND.(INDEX(ColorLines,"GRID-DECOMP").LE.0).AND.(IL1.EQ.1).AND.   &
-                   UseParticlePalette.EQV..FALSE.)THEN
+                   (TRIM(ContourFileType).EQ."HWM-CSV")).AND.(INDEX(ColorLines,"GRID-DECOMP").LE.0).AND.(IL1.EQ.1))THEN
+
 
                     Line = ""
 #ifdef CBARLIMIT
@@ -7450,6 +7419,35 @@
                 ENDIF
 
                 IF(IfPlotParticles.GT.0)THEN
+                    ! Particle trace addition
+                    ! OPEN(UNIT=43,FILE=TRIM(ParticleFile),ACTION="READ")
+                    ! READ(43,'(A)') JunkC
+                    ! READ(43,*) JunkI,NumParticles
+                    ! CLOSE(UNIT=43)
+                    ! IF(IfPlotParticleTrace.GT.0)THEN
+                    !     DO I=1,NumParticles
+                    !         WRITE(UNIT=ParticleTrace,FMT='(A,I6.6,A)') "Particle.",I,".trace"
+                    !         Line = ""
+                    !         Line = TRIM(Line)//TRIM(Path)//"psxy"
+                    !         Line = TRIM(Line)//" "//TRIM(TempPath)//TRIM(ParticleTrace)
+                    !         Line = TRIM(Line)//" "//"-W"//TRIM(TraceWidth)//"p,"//TRIM(TraceColor)
+                    !         Line = TRIM(Line)//" "//TRIM(ProjectionC)
+                    !         Line = TRIM(Line)//" "//"-R"//TRIM(ADJUSTL(XMin))//"/"//TRIM(ADJUSTL(XMax))//"/" &
+                    !                                 //TRIM(ADJUSTL(YMin))//"/"//TRIM(ADJUSTL(YMax))
+                    !         IF(KeepOpen(7).EQ.1.OR.UseParticlePalette) THEN
+                    !             Line = TRIM(Line)//" "//"-K"
+                    !         ENDIF
+                    !         IF(IfStarted.EQ.0)THEN
+                    !             Line = TRIM(Line)//" "//">"
+                    !             IfStarted = 1
+                    !         ELSE
+                    !             Line = TRIM(Line)//" "//"-O >>"
+                    !         ENDIF
+                    !         Line = TRIM(Line)//" "//TRIM(PlotName)//".ps"
+                    !         CALL SYSTEM(TRIM(Line))
+                    !     ENDDO
+                    ! ENDIF
+                    ! End of particle trace addition.
 
                     WRITE(UNIT=ParticleXYZFile,FMT='(A,A,I4.4,A)') TRIM(ParticleFile),".",Record,".xy"
                     Line = ""
@@ -7473,11 +7471,14 @@
                         ELSE
                             Line = TRIM(Line)//" "//"-Gp100/"//TRIM(ParticlePattern)//":F"//TRIM(ParticleColor)//"B-"
                         ENDIF
-                    ENDIF    
+                    ENDIF
                     IF(KeepOpen(7).EQ.1.OR.UseParticlePalette) THEN
                         Line = TRIM(Line)//" "//"-K"
                     ENDIF
-                    Line = TRIM(Line)//" "//"-Sc"//TRIM(ParticleSize)//"p"
+                    ! Ali
+                    ! Line = TRIM(Line)//" "//"-Sc"//TRIM(ParticleSize)
+                    Line = TRIM(Line)//" "//"-Sc"//TRIM(ParticleSize)//"p "//"-W1.0p"
+                    ! Ali
                     IF(IfStarted.EQ.0)THEN
                         Line = TRIM(Line)//" "//">"
                         IfStarted = 1
@@ -7488,23 +7489,25 @@
                     CALL SYSTEM(TRIM(Line))
 
                     IF(UseParticlePalette)THEN
-                        Line = ""
-                        Line = TRIM(Line)//TRIM(Path)//"psscale"
-                        Line = TRIM(Line)//" "//"-D"//TRIM(ADJUSTL(SideBarXC))//"i/"//TRIM(ADJUSTL(ContourScaleYC))//"i/" &
-                                         //TRIM(ADJUSTL(ScaleHeightC))//"i/"//TRIM(ADJUSTL(ScaleWidthC))//"i"
-                        Line = TRIM(Line)//" "//"-C"//TRIM(ParticlePalette)
-                        Line = TRIM(Line)//" "//"-B"//TRIM(ADJUSTL(ScaleLabelEveryC))//"::/:"//""""//TRIM(ContourUnits)//""""//":"
-                        IF(KeepOpen(7).EQ.1)THEN
-                            Line = TRIM(Line)//" "//"-K"
-                        ENDIF
-                        IF(IfStarted.EQ.0)THEN
-                            Line = TRIM(Line)//" "//">"
-                            IfStarted = 1
-                        ELSE
-                            Line = TRIM(Line)//" "//"-O >>"
-                        ENDIF
-                        Line = TRIM(Line)//" "//TRIM(PlotName)//".ps"
-                        CALL SYSTEM(TRIM(Line))
+                        ! Ali - Removing the legend based on particle palette
+                        ! Line = ""
+                        ! Line = TRIM(Line)//TRIM(Path)//"psscale"
+                        ! Line = TRIM(Line)//" "//"-D"//TRIM(ADJUSTL(SideBarXC))//"i/"//TRIM(ADJUSTL(ContourScaleYC))//"i/" &
+                        !                  //TRIM(ADJUSTL(ScaleHeightC))//"i/"//TRIM(ADJUSTL(ScaleWidthC))//"i"
+                        ! Line = TRIM(Line)//" "//"-C"//TRIM(ParticlePalette)
+                        ! Line = TRIM(Line)//" "//"-B"//TRIM(ADJUSTL(ScaleLabelEveryC))//"::/:"//""""//TRIM(ContourUnits)//""""//":"
+                        ! IF(KeepOpen(7).EQ.1)THEN
+                        !     Line = TRIM(Line)//" "//"-K"
+                        ! ENDIF
+                        ! IF(IfStarted.EQ.0)THEN
+                        !     Line = TRIM(Line)//" "//">"
+                        !     IfStarted = 1
+                        ! ELSE
+                        !     Line = TRIM(Line)//" "//"-O >>"
+                        ! ENDIF
+                        ! Line = TRIM(Line)//" "//TRIM(PlotName)//".ps"
+                        ! CALL SYSTEM(TRIM(Line))
+                        ! Ali
                     ENDIF
 
                     IF(Verbose.GE.3)THEN
@@ -7556,8 +7559,8 @@
                 IF(TRIM(ContourFileType).EQ."HWM-CSV")THEN
 
                     OPEN(UNIT=37,FILE=TRIM(ContourFile1),ACTION="READ")
-                   
-                    I = 0 
+
+                    I = 0
                     DO
                         READ(UNIT=37,FMT='(A)',END=999) JunkC
                         I = I + 1
@@ -7947,7 +7950,7 @@
 
                     Line = TRIM(Path)//"pstext "//TRIM(TempPath)//TRIM(PlotLabelFile)      &
                                 //" -JX1i -R0/8/0/1 -Xa"//TRIM(ADJUSTL(PlotLabelXAdjustC)) &
-                                //"i -Ya"//TRIM(ADJUSTL(PlotLabelYAdjustC))//"i"  
+                                //"i -Ya"//TRIM(ADJUSTL(PlotLabelYAdjustC))//"i"
                     IF(KeepOpen(13).EQ.1)THEN
                         Line = TRIM(Line)//" -K"
                     ENDIF
@@ -7997,7 +8000,7 @@
                             WRITE(UNIT=26,FMT='(A,F4.2)') "0 0 0 ",(CurrentTime-StartTime)/(TotalSimTime*86400D0-StartTime)
                         ELSE
                             WRITE(UNIT=26,FMT='(A,F4.2)') "0 0 0 ",1.0*Record/NumRecs
-                        ENDIF    
+                        ENDIF
                     ELSE
                         WRITE(UNIT=26,FMT='(A)') "0 0 0 0.0"
                     ENDIF
@@ -8033,7 +8036,7 @@
                                 AMPMS="AM"
                             ELSE
                                 AMPMS="AM"
-                            ENDIF   
+                            ENDIF
                         ENDIF
                         WRITE(UNIT=27,FMT='(A,I2.2,A,I2.2,A,I4.4)') &
                             "0 0.125 10 0 0 LT ",&
@@ -8046,7 +8049,7 @@
                             WRITE(UNIT=27,FMT='(A,I2.2,A,I2.2,A,I2.2)') &
                                 "0 -0.125 10 0 0 LT ",&
                                 ResultDate%Hour,":",ResultDate%Minute,":",ResultDate%Second
-                        ENDIF    
+                        ENDIF
                     ENDIF
                     CLOSE(UNIT=27,STATUS="KEEP")
 
@@ -8148,7 +8151,7 @@
 
                     CALL SYSTEM(TRIM(Path)//"ps2raster "//TRIM(PlotName)//".ps -A"//      &
                                 " -E"//TRIM(ResolutionC)//" -F"//TRIM(TempPath)//         &
-                                TRIM(PlotName)//"_grf"//" -G"//TRIM(GSPath)//"gs -P -Tj -W")             
+                                TRIM(PlotName)//"_grf"//" -G"//TRIM(GSPath)//"gs -P -Tj -W")
 
                     CALL SYSTEM("mv "//TRIM(TempPath)//TRIM(PlotName)//"_grf* .")
 
@@ -8256,7 +8259,7 @@
                     ENDIF
 
                 ENDIF
-         
+
                 IF(Verbose.GE.3)THEN
                     IF((IfGoogle.EQ.0).AND.(IfGIS.EQ.0))THEN
                         WRITE(*,9720) "Core ",MyRank," created the raster images for record ",Record,"."
@@ -8265,7 +8268,7 @@
                                       ", layer ",IL1,", cell ",IL2,"/",IL3,"."
                     ENDIF
                 ENDIF
-             
+
 
  9720           FORMAT(A,I4.4,A,I4.4,A)
  9721           FORMAT(A,I4.4,A,I4.4,A,I2.2,A,I2.2,A,I2.2,A)
@@ -8276,12 +8279,12 @@
 
         SUBROUTINE WriteXYZFiles(Record)
 
-                
+
 
 #ifdef NETCDF
                 USE netcdf
 #endif
-                
+
                 IMPLICIT NONE
 
                 INTRINSIC           :: INDEX
@@ -8348,6 +8351,7 @@
                 REAL(8)             :: JunkR
                 REAL                :: JunkR1
                 REAL                :: JunkR2
+                REAL                :: JunkR3
                 REAL(8),ALLOCATABLE :: OWI_XYZUV(:,:)
                 REAL                :: POW
                 REAL                :: TRUNC
@@ -8434,12 +8438,11 @@
                                 IF(CurrentRecord.LT.LocalRecord)THEN
                                     DO J=CurrentRecord,LocalRecord-1
                                         NumNodes1 = NumNodesGlobal
-                                        CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),&
-                                                           CurrentTime,JunkR,NumNodes1,DefaultValue)
+                                        CALL ReadTimeStamp(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),CurrentTime,JunkR, &
+                                                           NumNodes1,DefaultValue)
                                         DO I=1,NumNodes1
 #ifdef SLOWREAD
-                                            CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),0,&
-                                                              JunkI,JunkR1,JunkR2)
+                                            CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),0,JunkI,JunkR1,JunkR2)
 #else
                                             READ(19,*)
 #endif
@@ -8460,7 +8463,7 @@
                                 ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
                                 IF(ierr.NE.NF90_NOERR)THEN
                                     CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-                                ENDIF    
+                                ENDIF
 
 #endif
                             ENDIF
@@ -8491,13 +8494,11 @@
 
                             IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
-                                
+
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
-                                                              VEC1=U1,RECORD=LocalRecord)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,RECORD=LocalRecord)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,&
-                                                              VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=LocalRecord)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=LocalRecord)
                                 ENDIF
 #endif
                             ENDIF
@@ -8505,11 +8506,10 @@
                             DO I=1,NumNodes1
 
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    
+
                                     IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
 #ifdef SLOWREAD
-                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),1,JunkI,&
-                                                          JunkR1,JunkR2)
+                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),1,JunkI,JunkR1,JunkR2)
 #else
                                         READ(19,*) JunkI,JunkR1
 #endif
@@ -8529,25 +8529,18 @@
 
                                 ELSEIF(ContourFileNumCols.EQ.2)THEN
 
-                                    IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN 
+                                    IF(TRIM(ContourFileFormat1).EQ."ASCII")THEN
 #ifdef SLOWREAD
-                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),2,JunkI,&
-                                                          JunkR1,JunkR2)
+                                        CALL ReadNodeVals(19,LEN_TRIM(ContourFile1Local),TRIM(ContourFile1Local),2,JunkI,JunkR1,JunkR2)
 #else
                                         READ(19,*) JunkI,JunkR1,JunkR2
 #endif
                                         U1(JunkI) = JunkR1
                                         V1(JunkI) = JunkR2
                                         Vels1(JunkI) = ContourConversionFactor * SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
-#ifdef DRYZEROVEL                                            
-                                        IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
-#endif
-                                    ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN 
+                                    ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                         Vels1(I) = ContourConversionFactor * SQRT(U1(I)*U1(I)+V1(I)*V1(I))
-#ifdef DRYZEROVEL                                            
-                                        IF(Vels1(I).EQ.0D0)Vels1(I)=-99999D0
-#endif                                        
 #endif
                                     ENDIF
 
@@ -8565,7 +8558,7 @@
                                    ENDIF
                                 ENDIF
 
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)     
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)
 
                             ENDDO
 
@@ -8594,7 +8587,7 @@
                                    ENDIF
                                 ENDIF
 
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)     
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)
 
                             ENDDO
 
@@ -8709,7 +8702,7 @@
                                    ENDIF
                                 ENDIF
 
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)     
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)
 
                             ENDDO
 
@@ -8737,8 +8730,7 @@
 
 
                             DO I = 1,SIZE(OWI_XYZUV(:,1))
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,3)*&
-                                                                   ContourConversionFactor
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,3)*ContourConversionFactor
                             ENDDO
 
                             CLOSE(UNIT=12,STATUS="KEEP")
@@ -8773,13 +8765,13 @@
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
-                                    READ(UNIT=19,FMT=*) AttributeDefault 
+                                    READ(UNIT=19,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"canopy").GT.0).AND.(TRIM(ContourFileType).EQ."13-CANOPY"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
-                                    READ(UNIT=19,FMT=*) AttributeDefault 
+                                    READ(UNIT=19,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"surface_directional").GT.0).AND. &
                                        (INDEX(ContourFileType,"13-WIND-REDUCTION").GT.0))THEN
@@ -8792,32 +8784,31 @@
 
                                     AttributeDefault = AttrWR(Record)
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
-                                    READ(UNIT=19,FMT=*) AttributeDefault 
+                                    READ(UNIT=19,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.(TRIM(ContourFileType).EQ."13-EVIS"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
-                                    READ(UNIT=19,FMT=*) AttributeDefault 
+                                    READ(UNIT=19,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"surface_submergence_state").GT.0) &
      &                              .AND.(TRIM(ContourFileType).EQ."13-STARTDRY"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
-                                    READ(UNIT=19,FMT=*) AttributeDefault 
+                                    READ(UNIT=19,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"wave_refraction_in_swan").GT.0) &
      &                             .AND.(TRIM(ContourFileType).EQ."13-REFRAC"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
-                                    READ(UNIT=19,FMT=*) AttributeDefault 
+                                    READ(UNIT=19,FMT=*) AttributeDefault
 
                                 ELSE
 
@@ -8867,15 +8858,13 @@
 
                                     DO J=1,NumNonDefault
 
-                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), &
-                                                            AttrWR(5), AttrWR(6), AttrWR(7), AttrWR(8), AttrWR(9), &
-                                                            AttrWR(10), AttrWR(11), AttrWR(12)
+                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), AttrWR(6), &
+                                                            AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), AttrWR(11), AttrWR(12)
                                         Attributes1(JunkI) = AttrWR(Record)
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT=*) NumNonDefault
 
@@ -8908,7 +8897,7 @@
                                         Attributes1(JunkI) = JunkR
 
                                     ENDDO
-                                
+
                                 ELSEIF((INDEX(AttributeLabel,"wave_refraction_in_swan").GT.0) &
      &                               .AND.(TRIM(ContourFileType).EQ."13-REFRAC"))THEN
 
@@ -8920,7 +8909,7 @@
                                         Attributes1(JunkI) = JunkR
 
                                     ENDDO
-                                
+
                                 ELSE
 
                                     READ(UNIT=19,FMT=*) NumNonDefault
@@ -8945,7 +8934,7 @@
                                    ENDIF
                                 ENDIF
 
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)     
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)
 
 
                             ENDDO
@@ -9054,11 +9043,11 @@
 #ifdef NETCDF
                                 NumNodes1 = NumNodesGlobal
                                 CALL GetNetCDFVarID(NC_ID1,NC_Var,NC_Var2,ContourFileNumCols)
-                                
+
                                 ierr = NF90_GET_ATT(NC_ID1,NC_Var,'_FillValue',DefaultValue)
                                 IF(ierr.NE.NF90_NOERR)THEN
                                     CALL Check(NF90_GET_ATT(NC_ID1,NF90_GLOBAL,'_FillValue',DefaultValue))
-                                ENDIF    
+                                ENDIF
 
 #endif
                             ENDIF
@@ -9068,13 +9057,13 @@
                                                    NumNodes2,DefaultValue)
                             ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
-                                NumNodes2 = NumNodesMesh2 
+                                NumNodes2 = NumNodesMesh2
                                 CALL GetNetCDFVARID(NC_ID2,NC_Var3,NC_Var4,ContourFileNumCols2)
-                                
+
                                 ierr = NF90_GET_ATT(NC_ID2,NC_Var,'_FillValue',DefaultValue)
                                 IF(ierr.NE.NF90_NOERR)THEN
                                     CALL Check(NF90_GET_ATT(NC_ID2,NF90_GLOBAL,'_FillValue',DefaultValue))
-                                ENDIF    
+                                ENDIF
 
 #endif
                             ENDIF
@@ -9111,13 +9100,11 @@
 
                             IF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
-                                
+
                                 IF(ContourFileNumCols.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,&
-                                                              Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VEC1=U1,Record=Record)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,&
-                                                              VEC1=U1,VEC2=V1,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,Record=Record)
                                 ENDIF
 #endif
                             ENDIF
@@ -9125,11 +9112,9 @@
 #ifdef NETCDF
 
                                 IF(ContourFileNumCols2.EQ.1)THEN
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VEC1=U2,&
-                                                              Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VEC1=U2,Record=Record)
                                 ELSE
-                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VARID2=NC_Var4,&
-                                                              VEC1=U2,VEC2=V2,Record=Record)
+                                    CALL ReadMyNetCDFVariable(NCID=NC_ID2,NUMNODES=NumNodesMesh2,VARID1=NC_Var3,VARID2=NC_Var4,VEC1=U2,VEC2=V2,Record=Record)
                                 ENDIF
 
 #endif
@@ -9170,15 +9155,9 @@
                                         U1(JunkI) = JunkR1
                                         V1(JunkI) = JunkR2
                                         Vels1(JunkI) = ContourConversionFactor * SQRT(U1(JunkI)*U1(JunkI)+V1(JunkI)*V1(JunkI))
-#ifdef DRYZEROVEL                                            
-                                        IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
-#endif                                        
                                     ELSEIF(TRIM(ContourFileFormat1).EQ."NETCDF")THEN
 #ifdef NETCDF
                                         Vels1(I) = ContourConversionFactor * SQRT(U1(I)*U1(I)+V1(I)*V1(I))
-#ifdef DRYZEROVEL                                            
-                                        IF(Vels1(I).EQ.0D0)Vels1(I)=-99999D0
-#endif                                        
 #endif
                                     ENDIF
 
@@ -9212,7 +9191,7 @@
 
                                 ELSEIF(ContourFileNumCols.EQ.2)THEN
 
-                                    IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN 
+                                    IF(TRIM(ContourFileFormat2).EQ."ASCII")THEN
 #ifdef SLOWREAD
                                         CALL ReadNodeVals(23,LEN_TRIM(ContourFile2),TRIM(ContourFile2),2,JunkI,JunkR1,JunkR2)
 #else
@@ -9221,15 +9200,9 @@
                                         U2(JunkI) = JunkR1
                                         V2(JunkI) = JunkR2
                                         Vels2(JunkI) = ContourConversionFactor * SQRT(U2(JunkI)*U2(JunkI)+V2(JunkI)*V2(JunkI))
-#ifdef DRYZEROVEL                                            
-                                        IF(Vels1(JunkI).EQ.0D0)Vels1(JunkI)=-99999D0
-#endif                                        
-                                    ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN 
+                                    ELSEIF(TRIM(ContourFileFormat2).EQ."NETCDF")THEN
 #ifdef NETCDF
                                         Vels2(I) = ContourConversionFactor * SQRT(U2(I)*U2(I)+V2(I)*V2(I))
-#ifdef DRYZEROVEL                                            
-                                        IF(Vels2(I).EQ.0D0)Vels2(I)=-99999D0
-#endif                                        
 #endif
                                     ENDIF
 
@@ -9240,32 +9213,19 @@
                             DO I=1,NumNodesLocal
 
                                 IF(IfPlotBackgroundImages.NE.2)THEN
-#ifdef DEPTHDIFF                                
-                                    IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.&
-                                       (Vels2(TranslationTable(XYZNodes(I))).GT.-90000D0))THEN
+#ifdef DEPTHDIFF
+                                    IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).GT.-90000D0))THEN
                                         Z(I) = BathLocal(I) - Vels2(TranslationTable(XYZNodes(I)))
-                                    ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.&
-                                       (Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
-                                        Z(I) = Vels1(XYZNodes(I)) - BathLocal(I) 
-                                    ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.&
-                                       (Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
-#ifdef DRYDIFF
-                                        Z(I) = -99999D0
-#else                                    
+                                    ELSEIF((Vels1(XYZNodes(I)).GT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
+                                        Z(I) = Vels1(XYZNodes(I)) - BathLocal(I)
+                                    ELSEIF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
                                         Z(I) = 0.0d0
-#endif
-                                    ELSE
-                                        Z(I) = Vels1(XYZNodes(I)) - Vels2(TranslationTable(XYZNodes(I)))
-                                    ENDIF
-#elif defined(DRYDIFF)
-                                    IF((Vels1(XYZNodes(I)).LT.-90000D0).AND.(Vels2(TranslationTable(XYZNodes(I))).LT.-90000D0))THEN
-                                        Z(I) = -99999D0
                                     ELSE
                                         Z(I) = Vels1(XYZNodes(I)) - Vels2(TranslationTable(XYZNodes(I)))
                                     ENDIF
 #else
                                     Z(I) = Vels1(XYZNodes(I)) - Vels2(TranslationTable(XYZNodes(I)))
-#endif                                    
+#endif
                                 ELSE
                                     !...Set up a range (1/16 of the difference range) that is unplotted
                                     POW = -LOG10((ContourMax-ContourMin)/16D0)
@@ -9276,7 +9236,7 @@
                                         Z(I) = -99999D0
                                     ELSEIF(ABS(DBLE(INT(Z(I)*TRUNC))/TRUNC).LE.0D0)THEN
                                         Z(I) = -99999D0
-                                    ENDIF    
+                                    ENDIF
                                 ENDIF
 
                                 IF(OptimizeContours.EQ.1)THEN
@@ -9285,7 +9245,7 @@
                                    ENDIF
                                 ENDIF
 
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)     
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)
 
                             ENDDO
 
@@ -9331,7 +9291,7 @@
                             DO I=1,NumNodes2
                                 READ(UNIT=23,FMT=*) JunkI, JunkR, JunkR, Bath2(I)
                             ENDDO
-                            
+
                             DO I=1,NumNodesLocal
 
                                 Z(I) = (Bath1(XYZNodes(I)) - Bath2(TranslationTable(XYZNodes(I)))) * ContourConversionFactor
@@ -9342,7 +9302,7 @@
                                    ENDIF
                                 ENDIF
 
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)     
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)
 
                             ENDDO
 
@@ -9390,8 +9350,7 @@
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT=*) AttributeDefault
 
-                                ELSEIF((INDEX(AttributeLabel,"canopy").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-CANOPY"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"canopy").GT.0).AND.(TRIM(ContourFileType).EQ."13-CANOPY"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
@@ -9408,15 +9367,13 @@
 
                                     AttributeDefault = AttrWR(Record)
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT=*) AttributeDefault
 
-                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-EVIS"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.(TRIM(ContourFileType).EQ."13-EVIS"))THEN
 
                                     READ(UNIT=19,FMT='(A)') JunkC
                                     READ(UNIT=19,FMT='(A)') JunkC
@@ -9465,7 +9422,7 @@
 
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT='(A)') JunkC
-                                    READ(UNIT=23,FMT=*) AttributeDefault 
+                                    READ(UNIT=23,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"surface_directional").GT.0).AND. &
                                        (INDEX(ContourFileType,"13-WIND-REDUCTION").GT.0))THEN
@@ -9478,33 +9435,31 @@
 
                                     AttributeDefault = AttrWR(Record)
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
-                                        (TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT='(A)') JunkC
-                                    READ(UNIT=23,FMT=*) AttributeDefault 
+                                    READ(UNIT=23,FMT=*) AttributeDefault
 
-                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-EVIS"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.(TRIM(ContourFileType).EQ."13-EVIS"))THEN
 
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT='(A)') JunkC
-                                    READ(UNIT=23,FMT=*) AttributeDefault 
+                                    READ(UNIT=23,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"surface_submergence_state").GT.0) &
      &                              .AND.(TRIM(ContourFileType).EQ."13-STARTDRY"))THEN
 
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT='(A)') JunkC
-                                    READ(UNIT=23,FMT=*) AttributeDefault 
+                                    READ(UNIT=23,FMT=*) AttributeDefault
 
                                 ELSEIF((INDEX(AttributeLabel,"wave_refraction_in_swan").GT.0) &
      &                               .AND.(TRIM(ContourFileType).EQ."13-REFRAC"))THEN
 
                                     READ(UNIT=23,FMT='(A)') JunkC
                                     READ(UNIT=23,FMT='(A)') JunkC
-                                    READ(UNIT=23,FMT=*) AttributeDefault 
+                                    READ(UNIT=23,FMT=*) AttributeDefault
 
                                 ELSE
 
@@ -9554,15 +9509,13 @@
 
                                     DO J=1,NumNonDefault
 
-                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), &
-                                                            AttrWR(6), AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), &
-                                                            AttrWR(11), AttrWR(12)
+                                        READ(UNIT=19,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), AttrWR(6), &
+                                                            AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), AttrWR(11), AttrWR(12)
                                         Attributes1(JunkI) = AttrWR(Record)
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=19,FMT=*) NumNonDefault
 
@@ -9573,8 +9526,7 @@
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-EVIS"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"eddy_viscosity").GT.0).AND.(TRIM(ContourFileType).EQ."13-EVIS"))THEN
 
                                     READ(UNIT=19,FMT=*) NumNonDefault
 
@@ -9656,16 +9608,13 @@
 
                                     DO J=1,NumNonDefault
 
-                                        READ(UNIT=23,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), &
-                                                            AttrWR(4), AttrWR(5), AttrWR(6), &
-                                                            AttrWR(7), AttrWR(8), AttrWR(9), &
-                                                            AttrWR(10), AttrWR(11), AttrWR(12)
+                                        READ(UNIT=23,FMT=*) JunkI, AttrWR(1), AttrWR(2), AttrWR(3), AttrWR(4), AttrWR(5), AttrWR(6), &
+                                                            AttrWR(7), AttrWR(8), AttrWR(9), AttrWR(10), AttrWR(11), AttrWR(12)
                                         Attributes2(JunkI) = AttrWR(Record)
 
                                     ENDDO
 
-                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.&
-                                       (TRIM(ContourFileType).EQ."13-TAU0"))THEN
+                                ELSEIF((INDEX(AttributeLabel,"primitive_weighting").GT.0).AND.(TRIM(ContourFileType).EQ."13-TAU0"))THEN
 
                                     READ(UNIT=23,FMT=*) NumNonDefault
 
@@ -9727,8 +9676,7 @@
 
                             DO I=1,NumNodesLocal
 
-                                Z(I) = (Attributes1(XYZNodes(I))-Attributes2(TranslationTable(XYZNodes(I)))) * &
-                                        ContourConversionFactor
+                                Z(I) = (Attributes1(XYZNodes(I))-Attributes2(TranslationTable(XYZNodes(I)))) * ContourConversionFactor
 
                                 IF(OptimizeContours.EQ.1)THEN
                                    IF(BdyNodes(XYZNodes(I)))THEN
@@ -9736,7 +9684,7 @@
                                    ENDIF
                                 ENDIF
 
-                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)     
+                                WRITE(UNIT=12,FMT='(3(2X,F16.8))') X(I), Y(I), Z(I)
 
                             ENDDO
 
@@ -9774,13 +9722,23 @@
                             DO J=CurrentRecord,Record-1
                                 READ(40,*) JunkR1,NumParticles
                                 DO I=1,NumParticles
-                                    READ(40,*) JunkI,JunkR1,JunkR2
+                                    READ(40,*) JunkI,JunkR1,JunkR2,JunkR3
                                 ENDDO
                             ENDDO
                         ENDIF
                         READ(40,*) JunkR1,NumParticles
+                        ! Ali
+                        if (IfPlotParticleTrace.GT.0) then
+                        endif
+                        ! Ali
                         DO I=1,NumParticles
-                            READ(40,*) JunkI,JunkR1,JunkR2
+                            READ(40,*) JunkI,JunkR1,JunkR2,JunkR3
+                            !IF(IfPlotParticleTrace.GT.0)THEN
+                            !    WRITE(UNIT=ParticleTrace,FMT='(A,I6.6,A)') "Particle.",I,".trace"
+                            !    OPEN(UNIT=(10000+I),FILE=TRIM(TempPath)//TRIM(ParticleTrace),ACTION="WRITE",POSITION="APPEND")
+                            !    WRITE(UNIT=(10000+I),FMT='(3(2X,F16.8))') JunkR1,JunkR2,JunkR3
+                            !    CLOSE(UNIT=(10000+I),STATUS="KEEP")
+                            !ENDIF
                             IF(MOD(I,IfPlotParticles).EQ.0)THEN
                                 WRITE(41,FMT='(2(2X,F16.8))') JunkR1,JunkR2
                             ENDIF
@@ -9812,7 +9770,10 @@
                         DO I=1,NumParticles
                             IF(MOD(I,IfPlotParticles).EQ.0)THEN
                                 IF(UseParticlePalette)THEN
-                                    WRITE(41,FMT='(3(2X,F16.8))') ParticleLon(I),ParticleLat(I),ParticleFlag(I)
+                                    ! Ali
+                                    WRITE(41,FMT='(3(2X,F16.8))') ParticleLon(I),ParticleLat(I), ParticleFlag(I)
+                                    ! WRITE(41,FMT='(3(2X,F16.8))') ParticleLon(I),ParticleLat(I), 0.6
+                                    ! Ali
                                 ELSE
                                     WRITE(41,FMT='(2(2X,F16.8))') ParticleLon(I),ParticleLat(I)
                                 ENDIF
@@ -9890,8 +9851,7 @@
                                 WRITE(*,*) CurrentRecord,Record
                                 DO J=CurrentRecord,Record-1
                                     NumNodes1 = NumNodesGlobal
-                                    CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),CurrentTime,JunkR,NumNodes1,&
-                                                        DefaultValue)
+                                    CALL ReadTimeStamp(20,LEN_TRIM(VectorFile),TRIM(VectorFile),CurrentTime,JunkR,NumNodes1,DefaultValue)
                                     DO I=1,NumNodes1
 #ifdef SLOWREAD
                                         CALL ReadNodeVals(20,LEN_TRIM(VectorFile),TRIM(VectorFile),0,JunkI,JunkR1,JunkR2)
@@ -9967,8 +9927,7 @@
                                 ENDIF
                             ENDDO
                         ELSE
-                            CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,&
-                                                      VEC1=U1,VEC2=V1,RECORD=Record)
+                            CALL ReadMyNetCDFVariable(NCID=NC_ID1,NUMNODES=NumNodesGlobal,VARID1=NC_Var,VARID2=NC_Var2,VEC1=U1,VEC2=V1,RECORD=Record)
                         ENDIF
 #endif
                     ENDIF
@@ -9993,7 +9952,7 @@
                                     !...Lets assume this is a direction, and
                                     !   split into components of a unit vector
                                     !   If it isn't a direction, the user made
-                                    !   a boo-boo, and shall pay with an ugly 
+                                    !   a boo-boo, and shall pay with an ugly
                                     !   plot.
                                     IF(JunkR1.GT.-99990.AND.JunkR1.NE.0D0)THEN
                                         U1(JunkI) = COS(JunkR1*(DEG2RAD))
@@ -10014,20 +9973,20 @@
                             ENDIF
                         ENDDO
                     ENDIF
-                    
+
                     DO I=1,NumNodesLocal
                         WRITE(UNIT=17,FMT='(3(2X,F16.8))') X(I), Y(I), U1(XYZNodes(I)) * VectorConversionFactor
                         WRITE(UNIT=18,FMT='(3(2X,F16.8))') X(I), Y(I), V1(XYZNodes(I)) * VectorConversionFactor
                     ENDDO
 
-                    
-                    
+
+
                     ELSEIF(TRIM(VectorFileType).EQ."OWI-WIND")THEN
                         CALL ReadOWISnap("WIND",Record,VectorFile,OWI_XYZUV)
                         DO I = 1,SIZE(OWI_XYZUV(:,1))
                             WRITE(UNIT=17,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,4)*VectorConversionFactor
                             WRITE(UNIT=18,FMT='(3(2X,F16.8))') OWI_XYZUV(I,1),OWI_XYZUV(I,2),OWI_XYZUV(I,5)*VectorConversionFactor
-                        ENDDO    
+                        ENDDO
                     ENDIF
 
                     CLOSE(UNIT=17,STATUS="KEEP")
@@ -10063,7 +10022,7 @@
                             " -R"//TRIM(ADJUSTL(XMinBuf))//"/"//TRIM(ADJUSTL(XMaxBuf))//"/"             &
                             //TRIM(ADJUSTL(YMinBuf))//"/"//TRIM(ADJUSTL(YMaxBuf))//                     &
                             " -N0.0")
-                            
+
                     CALL SYSTEM(TRIM(Path)//"xyz2grd "//TRIM(TempPath)//TRIM(VectorVFile)//".xyz"//     &
                             " -G"//TRIM(TempPath)//TRIM(VectorVFile)//".grd -I"//TRIM(VectorSpacingC)// &
                             TRIM(VectorUnits)//                                                         &
@@ -10096,13 +10055,13 @@
                     WRITE(*,'(A,I4.4,A,I4.4,A)') "Core ",MyRank," wrote the XYZ files for record ",Record,"."
                 ENDIF
 
-        END SUBROUTINE 
+        END SUBROUTINE
 
 
 
         SUBROUTINE Finisher(Flag)
 
-                
+
 
                 IMPLICIT NONE
 
@@ -10249,17 +10208,17 @@
 #endif
 
         END SUBROUTINE
-        
+
         SUBROUTINE READOWISNAP(FILETYPE,MYRECORD,FILENAME,XYZUV,Time)
             IMPLICIT NONE
             CHARACTER(*),INTENT(IN) :: FILETYPE,FILENAME
             INTEGER,INTENT(IN)      :: MYRECORD
             REAL(8),INTENT(OUT),OPTIONAL :: Time
             REAL(8),ALLOCATABLE,INTENT(OUT) :: XYZUV(:,:)
-            
+
             CHARACTER(200)          :: OWIHEADER
             CHARACTER(200)          :: DateString
-            
+
             INTEGER                 :: LOCALSNAP
             INTEGER                 :: IOS
             INTEGER                 :: I
@@ -10271,7 +10230,7 @@
             INTEGER                 :: imin
             INTEGER(8)              :: StartSec
             INTEGER(8)              :: CurrentSec
-            
+
             REAL(8)                 :: JunkR
             REAL(8)                 :: swLat
             REAL(8)                 :: swLong
@@ -10280,7 +10239,7 @@
             REAL(8),ALLOCATABLE     :: OWI_GRIDDATA(:,:,:)
 
             TYPE(DATEVAR)           :: MyDate
-            
+
             OPEN(FILE=TRIM(FILENAME),UNIT=221,ACTION="READ")
             READ(221,'(A)') OWIHEADER
 
@@ -10312,7 +10271,7 @@
                     MyDate%Second = 0
                     Time = DBLE(JulianSec(MyDate) - StartSec)
                 ENDIF
-    
+
                 IF(TRIM(FILETYPE).EQ."PRESS")THEN
                     IF(LOCALSNAP.LT.MYRECORD)THEN
                         READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
@@ -10363,10 +10322,10 @@
                         RETURN
                     ENDIF
                 ENDIF
-            ENDDO    
+            ENDDO
 11          FORMAT(T6,I4,T16,I4,T23,F6.0,T32,F6.0,T44,F8.0,T58,F8.0,T69,I10,I2)
 22          FORMAT(8F10.0)
-                
+
         END SUBROUTINE
 
         SUBROUTINE GetOWILength(FileType,Filename,NumWindSnaps)
@@ -10407,14 +10366,14 @@
                 ELSEIF(TRIM(FILETYPE).EQ."WIND")THEN
                     READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
                     READ(221,22) ((JunkR,I=1,iLong),J=1,iLat)
-                ENDIF    
+                ENDIF
             ENDDO
 11          FORMAT(T6,I4,T16,I4,T23,F6.0,T32,F6.0,T44,F8.0,T58,F8.0,T69,I10,I2)
 22          FORMAT(8F10.0)
         END SUBROUTINE
 
-            
-    
+
+
     END MODULE
 
     PROGRAM FigureGen
@@ -10442,7 +10401,7 @@
 #endif
 
                 INTRINSIC           :: NINT
-                INTRINSIC           :: REAL 
+                INTRINSIC           :: REAL
 
                 CHARACTER(LEN=1)    :: JunkC
                 CHARACTER(LEN=60)   :: RecordC
@@ -10484,7 +10443,7 @@
 
 #ifdef NETCDF
                 CALL Initialize_NetCDF()
-#endif                
+#endif
 
                 IF(MyRank.EQ.0)THEN
 
@@ -10523,7 +10482,7 @@
                         WRITE(*,'(A,$)') "Enter name of input file: "
                         READ(*,'(A)') InputFile
                     ENDIF
-                    
+
                 ENDIF
 
 #ifdef CMPI
@@ -10554,48 +10513,48 @@
                        ENDDO
                        JunkR=0
                    ENDDO
-#endif                   
+#endif
                    IF(InputFileError)THEN
 #ifdef CMPI
                         CALL MPI_FINALIZE(IERR)
 #endif
                         STOP
                    ENDIF
-                   
+
                    IF(OutputFileList)THEN
                        CALL ReadOutputFileList(ContourFileListFile,NumContourFiles,ContourFileList,ContourFileTag,ReadError)
-#ifdef CMPI            
+#ifdef CMPI
                        CALL MPI_BCAST(ReadError,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERR)
 #endif
                        IF(ReadError)THEN
 #ifdef CMPI
                            CALL MPI_FINALIZE(IERR)
-#endif                           
+#endif
                            STOP
-                       ENDIF 
-#ifdef CMPI                       
+                       ENDIF
+#ifdef CMPI
                        CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
                        CALL MPI_BCAST(RecordsList,NumContourfiles,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
-                       
+
                        DO I=1,NumContourFiles
                            CALL MPI_BCAST(ContourFileList(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
                            CALL MPI_BCAST(ContourFileTag(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
-                       ENDDO    
-#endif                       
+                       ENDDO
+#endif
                        NumRecords = NumContourFiles
                    ENDIF
-                   
-    
+
+
 
                 ELSE
-#ifdef CMPI                
+#ifdef CMPI
                    CALL MPI_RECV(JunkI,1,MPI_INTEGER,0,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE,IERR)
                    CALL ReadInputFile(InputFileError)
                    IF(InputFileError)THEN
                         CALL MPI_FINALIZE(IERR)
                         STOP
                    ENDIF
-                   
+
                    IF(OutputFileList)THEN
                       CALL MPI_BCAST(ReadError,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERR)
                       IF(ReadError)THEN
@@ -10604,20 +10563,20 @@
                       ENDIF
 
                       CALL MPI_BCAST(NumContourFiles,1,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
-                     
+
                       IF(ALLOCATED(RecordsList))DEALLOCATE(RecordsList)
                       ALLOCATE(RecordsList(1:NumContourFiles))
-                      
+
                       CALL MPI_BCAST(RecordsList,NumContourfiles,MPI_INTEGER,0,MPI_COMM_WORLD,IERR)
                       ALLOCATE(ContourFileList(NumContourFiles))
                       ALLOCATE(ContourFileTag(NumContourFiles))
                       DO I=1,NumContourFiles
                          CALL MPI_BCAST(ContourFileList(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
                          CALL MPI_BCAST(ContourFileTag(I),60,MPI_CHARACTER,0,MPI_COMM_WORLD,IERR)
-                      ENDDO   
+                      ENDDO
                       NumRecords = NumContourFiles
-                   ENDIF   
-#endif                   
+                   ENDIF
+#endif
                 ENDIF
 
                 IF(MyRank.EQ.0)THEN
@@ -10639,20 +10598,20 @@
                         ENDDO
                     ENDIF
 
-                ENDIF                        
+                ENDIF
 
 #ifdef CMPI
                 IF(DoCenter.EQ.1)THEN
                     CALL MPI_BCAST(LongW, 1, MPI_REAL, 0, MPI_COMM_WORLD, IERR)
-                    CALL MPI_BCAST(LongE, 1, MPI_REAL, 0, MPI_COMM_WORLD, IERR) 
+                    CALL MPI_BCAST(LongE, 1, MPI_REAL, 0, MPI_COMM_WORLD, IERR)
                     CALL MPI_BCAST(LatN,  1, MPI_REAL, 0, MPI_COMM_WORLD, IERR)
                     CALL MPI_BCAST(LatS,  1, MPI_REAL, 0, MPI_COMM_WORLD, IERR)
                 ENDIF
 #endif
 
                 IF(MyRank.EQ.0)THEN
-                
-#ifdef CMPI            
+
+#ifdef CMPI
 
                     DO I=1,NumProcs-1
                        CALL MPI_SEND(0,1,MPI_INTEGER,I,1,MPI_COMM_WORLD,IERR)
@@ -10690,7 +10649,7 @@
                         ENDIF
                     ENDIF
                     IF(IfPlotVectors.GT.0)THEN
-    
+
                         IF(TRIM(VectorFileType).EQ."ADCIRC-OUTPUT")THEN
 
                             IF(TRIM(VectorFileFormat).EQ."ASCII")THEN
@@ -11023,8 +10982,7 @@
                                 ENDIF
                             ENDIF
 
-                            IF((IfPlotFilledContours.GT.0).OR.(IfPlotContourLines.GT.0).OR.&
-                               (IfPlotParticles.GT.0).OR.(IfPlotVectors.GT.0))THEN
+                            IF((IfPlotFilledContours.GT.0).OR.(IfPlotContourLines.GT.0).OR.(IfPlotParticles.GT.0).OR.(IfPlotVectors.GT.0))THEN
 
                                 WRITE(UNIT=RecordC,FMT='(I4.4)') Record
                                 TempC = TRIM(TempPath)//"XYZFileNames_"//TRIM(RecordC)//".tmp"
@@ -11144,7 +11102,7 @@
                         CALL SYSTEM("rm Scale*")
                     ENDIF
 
-                    CALL RemoveIfExists(".bb")
+                    CALL RemoveIfExists(".bb",3)
 
                 ENDIF
 
@@ -11158,3 +11116,4 @@
 #endif
 
     END PROGRAM
+
